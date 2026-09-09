@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="id" data-mode="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Macro Regime Scoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{
+  --bg:#0A0A0B;
+  --surface:#131316;
+  --surface-alt:#1A1A1D;
+  --border:#232326;
+  --text:#F4F4F5;
+  --text-muted:#8B8B93;
+  --accent:#4F8A82;
+  --accent-fg:#0A0A0B;
+  --green:#00D084; --green-bg:#0C2A21;
+  --blue:#3B82F6; --blue-bg:#0E1E38;
+  --amber:#F5C518; --amber-bg:#2A2408;
+  --orange:#F97316; --orange-bg:#2A1608;
+  --red:#FF4757; --red-bg:#2A0E12;
+  --gray:#6B7280; --gray-bg:#1C1C1E;
+  --radius:6px;
+  --font-body:'Inter',sans-serif;
+  --font-head:'Inter Tight',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.6;}
+.app{max-width:760px;margin:0 auto;padding:20px 16px 60px;}
+header{margin-bottom:20px;}
+header h1{font-family:var(--font-head);font-weight:600;font-size:20px;margin:0 0 4px;}
+header p{color:var(--text-muted);font-size:13px;margin:0;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+.section-title{font-family:var(--font-head);font-weight:600;font-size:15px;margin:0 0 12px;display:flex;align-items:center;justify-content:space-between;}
+.section-title .sub{font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--text-muted);}
+.btn{font-family:var(--font-body);font-weight:500;font-size:13px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-alt);color:var(--text);padding:8px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{border-color:var(--accent);}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600;}
+.btn:disabled{opacity:0.5;cursor:not-allowed;}
+.btn i{width:15px;height:15px;}
+
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.score-card{background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.score-card .label{font-size:12px;color:var(--text-muted);margin-bottom:6px;}
+.score-card .value{font-family:var(--font-mono);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;}
+.score-card.wide{grid-column:1 / -1;}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;font-family:var(--font-body);}
+.badge.green{background:var(--green-bg);color:var(--green);}
+.badge.blue{background:var(--blue-bg);color:var(--blue);}
+.badge.amber{background:var(--amber-bg);color:var(--amber);}
+.badge.orange{background:var(--orange-bg);color:var(--orange);}
+.badge.red{background:var(--red-bg);color:var(--red);}
+.badge.gray{background:var(--gray-bg);color:var(--gray);}
+
+.ind-row{display:grid;grid-template-columns:1.6fr 0.8fr 0.8fr 0.5fr 0.6fr;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.ind-row:last-child{border-bottom:none;}
+.ind-row.head{color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:0.03em;}
+.ind-name{display:flex;flex-direction:column;}
+.ind-name .tag{font-size:11px;color:var(--text-muted);}
+.ind-val{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+.ind-val input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);padding:5px 6px;font-size:13px;}
+.ind-val input:focus{outline:none;border-color:var(--accent);}
+.score-pill{font-family:var(--font-mono);font-weight:600;padding:2px 8px;border-radius:4px;text-align:center;font-size:12px;}
+.status-line{font-size:11px;color:var(--text-muted);margin-top:2px;}
+
+.alloc-row{display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.7fr 0.9fr;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.alloc-row:last-child{border-bottom:none;}
+.alloc-row.head{color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:0.03em;}
+.alloc-row input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);padding:5px 6px;font-size:13px;}
+.alloc-row input:focus{outline:none;border-color:var(--accent);}
+.gap-pos{color:var(--green);} .gap-neg{color:var(--red);} .gap-zero{color:var(--text-muted);}
+.total-line{display:flex;justify-content:space-between;padding-top:10px;font-size:12px;color:var(--text-muted);}
+.total-line.bad{color:var(--orange);}
+
+.narrative-box{white-space:pre-wrap;font-size:13px;line-height:1.7;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.hint{font-size:12px;color:var(--text-muted);margin-top:8px;}
+.error-banner{background:var(--red-bg);color:var(--red);border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;}
+.error-banner.show{display:block;}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.25);border-top-color:currentColor;border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+footer{color:var(--text-muted);font-size:11px;line-height:1.6;margin-top:24px;}
+
+@media (max-width:600px){
+  .ind-row, .alloc-row{grid-template-columns:1fr;gap:4px;padding:12px 0;}
+  .ind-row.head, .alloc-row.head{display:none;}
+  .ind-row > div::before, .alloc-row > div::before{content:attr(data-label);display:block;font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;}
+  .score-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>Macro Regime Scoring</h1>
+    <p>Tactical asset allocation berbasis rezim makro &middot; update <span id="lastUpdated">-</span></p>
+  </header>
+
+  <div id="errorBanner" class="error-banner"></div>
+
+  <section class="panel">
+    <div class="section-title">
+      Ringkasan skor
+      <button class="btn" id="refreshBtn"><i data-lucide="refresh-cw"></i> Ambil data terbaru</button>
+    </div>
+    <div class="score-grid">
+      <div class="score-card">
+        <div class="label">Growth score</div>
+        <div class="value" id="growthScoreVal">-</div>
+      </div>
+      <div class="score-card">
+        <div class="label">Inflation score</div>
+        <div class="value" id="inflationScoreVal">-</div>
+      </div>
+      <div class="score-card wide">
+        <div class="label">Kuadran makro aktif</div>
+        <div class="value" id="quadrantVal" style="font-size:18px;">-</div>
+        <div style="margin-top:8px;"><span class="badge gray" id="verdictBadge">-</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-title">
+      Indikator &amp; skor
+      <span class="sub">6 auto-fetch, 1 manual (ISM PMI)</span>
+    </div>
+    <div class="ind-row head">
+      <div>Indikator</div><div>Bulan ini</div><div>Bulan lalu</div><div>Skor</div><div>Kontribusi</div>
+    </div>
+    <div id="indicatorList"></div>
+  </section>
+
+  <section class="panel">
+    <div class="section-title">Alokasi: target vs saat ini</div>
+    <div class="alloc-row head">
+      <div>Aset</div><div>Target</div><div>Saat ini</div><div>Gap</div><div>Aksi</div>
+    </div>
+    <div id="allocationList"></div>
+    <div class="total-line" id="allocTotalLine">Total alokasi saat ini: 0%</div>
+  </section>
+
+  <section class="panel">
+    <div class="section-title">Analisis AI</div>
+    <button class="btn primary" id="generateBtn"><i data-lucide="sparkles"></i> Generate analisis</button>
+    <div class="hint">Narasi dibuat oleh Gemini berdasarkan skor di atas &mdash; bukan nasihat investasi, cek ulang sebelum dieksekusi.</div>
+    <div id="narrativeBox" class="narrative-box" style="display:none;"></div>
+  </section>
+
+  <footer>
+    Model ini alat bantu bias risiko jangka menengah (3-12 bulan), bukan sinyal timing harian. Tidak ada skor kepercayaan numerik yang ditampilkan secara sengaja untuk menghindari kesan presisi palsu. ISM Manufacturing PMI diisi manual karena tidak ada API gratis yang reliable.
+  </footer>
+
+</div>
+
+<script>
+const INDICATORS = [
+  { key:"yield_curve", label:"Yield Curve 10Y-2Y", timing:"Leading", axis:"growth", weight:0.40, endpoint:"/fred/yield-curve", scoreFn:(c)=> c>0.1?1:c<-0.1?-1:0 },
+  { key:"ism_pmi", label:"ISM Manufacturing PMI", timing:"Leading", axis:"growth", weight:0.30, manual:true, scoreFn:(c)=> c>52?1:c<48?-1:0 },
+  { key:"nfp", label:"Nonfarm Payrolls (Δ ribu)", timing:"Coincident", axis:"growth", weight:0.15, endpoint:"/fred/nfp", scoreFn:(c)=> c>150?1:c<50?-1:0 },
+  { key:"retail_sales", label:"Retail Sales MoM (%)", timing:"Coincident", axis:"growth", weight:0.15, endpoint:"/fred/retail-sales", scoreFn:(c)=> c>0.3?1:c<-0.1?-1:0 },
+  { key:"cpi", label:"CPI YoY (%)", timing:"Lagging", axis:"inflation", weight:0.35, endpoint:"/fred/cpi", scoreFn:(c,p)=> c>p+0.1?1:c<p-0.1?-1:0 },
+  { key:"fed_funds", label:"Fed Funds Rate (%)", timing:"Lagging", axis:"inflation", weight:0.30, endpoint:"/fred/fed-funds", scoreFn:(c,p)=> c>p?1:c<p?-1:0 },
+  { key:"crude_oil", label:"Crude Oil WTI YoY (%)", timing:"Leading", axis:"inflation", weight:0.35, endpoint:"/fred/crude-oil", scoreFn:(c)=> c>10?1:c<-10?-1:0 },
+];
+
+const REGIME_MATRIX = {
+  "K1: Goldilocks":     { kondisi:"Growth naik, Inflasi turun", saham:0.50, kripto:0.20, gold:0.10, fixedIncome:0.10, cash:0.10, verdict:"AKUMULASI KUAT", color:"green" },
+  "K2: Reflation":      { kondisi:"Growth naik, Inflasi naik",  saham:0.40, kripto:0.20, gold:0.20, fixedIncome:0.05, cash:0.15, verdict:"AKUMULASI",      color:"green" },
+  "Netral/Transisi":    { kondisi:"Sinyal campuran / belum jelas", saham:0.30, kripto:0.10, gold:0.20, fixedIncome:0.15, cash:0.25, verdict:"HOLD-NETRAL", color:"blue" },
+  "K3: Stagflation":    { kondisi:"Growth turun, Inflasi naik", saham:0.15, kripto:0.05, gold:0.35, fixedIncome:0.10, cash:0.35, verdict:"KURANGI EXPOSURE", color:"orange" },
+  "K4: Deflasi/Resesi": { kondisi:"Growth turun, Inflasi turun", saham:0.10, kripto:0.05, gold:0.20, fixedIncome:0.25, cash:0.40, verdict:"DISTRIBUSI", color:"red" },
+};
+
+const ASSET_LABELS = { saham:"Saham", kripto:"Kripto", gold:"Gold", fixedIncome:"Fixed Income", cash:"Cash/RDPU" };
+
+const state = {};
+INDICATORS.forEach(ind => {
+  state[ind.key] = { current: null, previous: null, score: null, contribution: null, status: ind.manual ? "manual" : "idle", date: null };
+});
+const scores = { growth: 0, inflation: 0, quadrant: "Netral/Transisi" };
+const currentAllocation = { saham: 20, kripto: 20, gold: 20, fixedIncome: 20, cash: 20 };
+
+function getQuadrant(g, i) {
+  if (Math.abs(g) <= 0.15 || Math.abs(i) <= 0.15) return "Netral/Transisi";
+  if (g > 0.15 && i < -0.15) return "K1: Goldilocks";
+  if (g > 0.15 && i > 0.15) return "K2: Reflation";
+  if (g < -0.15 && i > 0.15) return "K3: Stagflation";
+  if (g < -0.15 && i < -0.15) return "K4: Deflasi/Resesi";
+  return "Netral/Transisi";
+}
+
+function showError(msg) {
+  const el = document.getElementById("errorBanner");
+  el.textContent = msg;
+  el.classList.add("show");
+}
+function clearError() {
+  document.getElementById("errorBanner").classList.remove("show");
+}
+
+async function fetchIndicator(ind) {
+  if (ind.manual) return;
+  try {
+    const res = await fetch(ind.endpoint);
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || "Gagal mengambil data");
+    state[ind.key].current = data.latest ? data.latest.value : null;
+    state[ind.key].previous = data.previous ? data.previous.value : null;
+    state[ind.key].date = data.latest ? data.latest.date : null;
+    state[ind.key].status = "ok";
+  } catch (err) {
+    state[ind.key].status = "error";
+    state[ind.key].errorMsg = err.message;
+  }
+}
+
+function recompute() {
+  let growth = 0, inflation = 0;
+  INDICATORS.forEach(ind => {
+    const s = state[ind.key];
+    if (s.current === null || s.current === undefined || s.current === "") {
+      s.score = null; s.contribution = null; return;
+    }
+    const curr = parseFloat(s.current);
+    const prev = s.previous === null || s.previous === undefined || s.previous === "" ? curr : parseFloat(s.previous);
+    s.score = ind.scoreFn(curr, prev);
+    s.contribution = s.score * ind.weight;
+    if (ind.axis === "growth") growth += s.contribution; else inflation += s.contribution;
+  });
+  scores.growth = growth;
+  scores.inflation = inflation;
+  scores.quadrant = getQuadrant(growth, inflation);
+}
+
+function scoreBadgeClass(score) {
+  if (score === null || score === undefined) return "gray";
+  if (score > 0) return "green";
+  if (score < 0) return "red";
+  return "gray";
+}
+
+function renderIndicators() {
+  const list = document.getElementById("indicatorList");
+  list.innerHTML = "";
+  INDICATORS.forEach(ind => {
+    const s = state[ind.key];
+    const row = document.createElement("div");
+    row.className = "ind-row";
+
+    const nameCell = document.createElement("div");
+    nameCell.setAttribute("data-label", "Indikator");
+    nameCell.innerHTML = `<div class="ind-name"><span>${ind.label}</span><span class="tag">${ind.timing} &middot; bobot ${(ind.weight*100).toFixed(0)}%</span></div>`;
+    row.appendChild(nameCell);
+
+    const curCell = document.createElement("div");
+    curCell.className = "ind-val";
+    curCell.setAttribute("data-label", "Bulan ini");
+    if (ind.manual) {
+      curCell.innerHTML = `<input type="number" step="0.01" data-key="${ind.key}" data-field="current" value="${s.current ?? ""}" placeholder="cth 54.6" />`;
+    } else if (s.status === "error") {
+      curCell.innerHTML = `<span style="color:var(--red);font-size:12px;">gagal</span>`;
+    } else {
+      curCell.textContent = s.current !== null ? Number(s.current).toFixed(2) : "-";
+    }
+    row.appendChild(curCell);
+
+    const prevCell = document.createElement("div");
+    prevCell.className = "ind-val";
+    prevCell.setAttribute("data-label", "Bulan lalu");
+    if (ind.manual) {
+      prevCell.innerHTML = `<input type="number" step="0.01" data-key="${ind.key}" data-field="previous" value="${s.previous ?? ""}" placeholder="cth 55.6" />`;
+    } else {
+      prevCell.textContent = s.previous !== null ? Number(s.previous).toFixed(2) : "-";
+    }
+    row.appendChild(prevCell);
+
+    const scoreCell = document.createElement("div");
+    scoreCell.setAttribute("data-label", "Skor");
+    const scoreText = s.score === null || s.score === undefined ? "-" : (s.score > 0 ? "+1" : s.score < 0 ? "-1" : "0");
+    scoreCell.innerHTML = `<span class="score-pill badge ${scoreBadgeClass(s.score)}">${scoreText}</span>`;
+    row.appendChild(scoreCell);
+
+    const contribCell = document.createElement("div");
+    contribCell.className = "ind-val";
+    contribCell.setAttribute("data-label", "Kontribusi");
+    contribCell.textContent = s.contribution !== null && s.contribution !== undefined ? s.contribution.toFixed(2) : "-";
+    row.appendChild(contribCell);
+
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll("input[data-key]").forEach(input => {
+    input.addEventListener("input", (e) => {
+      const key = e.target.getAttribute("data-key");
+      const field = e.target.getAttribute("data-field");
+      state[key][field] = e.target.value === "" ? null : parseFloat(e.target.value);
+      recompute();
+      renderScores();
+      renderAllocation();
+    });
+  });
+}
+
+function renderScores() {
+  document.getElementById("growthScoreVal").textContent = (scores.growth >= 0 ? "+" : "") + scores.growth.toFixed(2);
+  document.getElementById("inflationScoreVal").textContent = (scores.inflation >= 0 ? "+" : "") + scores.inflation.toFixed(2);
+  document.getElementById("quadrantVal").textContent = scores.quadrant;
+  const regime = REGIME_MATRIX[scores.quadrant];
+  const badge = document.getElementById("verdictBadge");
+  badge.textContent = regime.verdict;
+  badge.className = "badge " + regime.color;
+}
+
+function renderAllocation() {
+  const regime = REGIME_MATRIX[scores.quadrant];
+  const list = document.getElementById("allocationList");
+  list.innerHTML = "";
+  let totalCurrent = 0;
+  Object.keys(ASSET_LABELS).forEach(assetKey => {
+    const target = regime[assetKey] * 100;
+    const current = currentAllocation[assetKey];
+    totalCurrent += current;
+    const gap = target - current;
+    const row = document.createElement("div");
+    row.className = "alloc-row";
+
+    const nameCell = document.createElement("div");
+    nameCell.setAttribute("data-label", "Aset");
+    nameCell.textContent = ASSET_LABELS[assetKey];
+    row.appendChild(nameCell);
+
+    const targetCell = document.createElement("div");
+    targetCell.setAttribute("data-label", "Target");
+    targetCell.style.fontFamily = "var(--font-mono)";
+    targetCell.textContent = target.toFixed(0) + "%";
+    row.appendChild(targetCell);
+
+    const currentCell = document.createElement("div");
+    currentCell.setAttribute("data-label", "Saat ini");
+    currentCell.innerHTML = `<input type="number" step="1" data-asset="${assetKey}" value="${current}" />`;
+    row.appendChild(currentCell);
+
+    const gapCell = document.createElement("div");
+    gapCell.setAttribute("data-label", "Gap");
+    const gapClass = gap > 0.5 ? "gap-pos" : gap < -0.5 ? "gap-neg" : "gap-zero";
+    gapCell.className = gapClass;
+    gapCell.style.fontFamily = "var(--font-mono)";
+    gapCell.textContent = (gap >= 0 ? "+" : "") + gap.toFixed(0) + "%";
+    row.appendChild(gapCell);
+
+    const actionCell = document.createElement("div");
+    actionCell.setAttribute("data-label", "Aksi");
+    const action = gap > 5 ? "Tambah" : gap < -5 ? "Kurangi" : "Tahan";
+    actionCell.textContent = action;
+    row.appendChild(actionCell);
+
+    list.appendChild(row);
+  });
+
+  const totalLine = document.getElementById("allocTotalLine");
+  totalLine.textContent = `Total alokasi saat ini: ${totalCurrent.toFixed(0)}%`;
+  totalLine.className = "total-line" + (Math.abs(totalCurrent - 100) > 1 ? " bad" : "");
+
+  list.querySelectorAll("input[data-asset]").forEach(input => {
+    input.addEventListener("input", (e) => {
+      currentAllocation[e.target.getAttribute("data-asset")] = parseFloat(e.target.value) || 0;
+      renderAllocation();
+    });
+  });
+}
+
+async function refreshAll() {
+  clearError();
+  const btn = document.getElementById("refreshBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Mengambil...`;
+  const results = await Promise.allSettled(INDICATORS.filter(i => !i.manual).map(fetchIndicator));
+  const anyError = INDICATORS.some(ind => !ind.manual && state[ind.key].status === "error");
+  if (anyError) showError("Sebagian data gagal diambil dari FRED. Cek koneksi atau coba lagi. Data lain tetap dipakai.");
+  recompute();
+  renderIndicators();
+  renderScores();
+  renderAllocation();
+  document.getElementById("lastUpdated").textContent = new Date().toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
+  btn.disabled = false;
+  btn.innerHTML = `<i data-lucide="refresh-cw"></i> Ambil data terbaru`;
+  lucide.createIcons();
+}
+
+async function generateNarrative() {
+  const btn = document.getElementById("generateBtn");
+  const box = document.getElementById("narrativeBox");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Menyusun analisis...`;
+  box.style.display = "block";
+  box.textContent = "Menunggu respons dari Gemini...";
+
+  const regime = REGIME_MATRIX[scores.quadrant];
+  const indicatorsPayload = INDICATORS.map(ind => {
+    const s = state[ind.key];
+    const dir = s.score > 0 ? "+" : s.score < 0 ? "-" : "0";
+    return { label: ind.label, scoreLabel: dir };
+  });
+  const allocationPayload = Object.keys(ASSET_LABELS).map(assetKey => {
+    const target = Math.round(regime[assetKey] * 100);
+    const current = currentAllocation[assetKey];
+    return { name: ASSET_LABELS[assetKey], target, current, gap: target - current };
+  });
+
+  try {
+    const res = await fetch("/gemini/narrative", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        growthScore: scores.growth,
+        inflationScore: scores.inflation,
+        quadrant: scores.quadrant,
+        indicators: indicatorsPayload,
+        allocation: allocationPayload,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || "Gagal generate narasi");
+    box.textContent = data.narrative;
+  } catch (err) {
+    box.textContent = "Gagal membuat analisis: " + err.message;
+  }
+  btn.disabled = false;
+  btn.innerHTML = `<i data-lucide="sparkles"></i> Generate analisis`;
+  lucide.createIcons();
+}
+
+document.getElementById("refreshBtn").addEventListener("click", refreshAll);
+document.getElementById("generateBtn").addEventListener("click", generateNarrative);
+
+recompute();
+renderIndicators();
+renderScores();
+renderAllocation();
+lucide.createIcons();
+refreshAll();
+</script>
+</body>
+</html>

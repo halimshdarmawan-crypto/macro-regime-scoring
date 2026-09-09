@@ -85,6 +85,8 @@ header p{color:var(--text-muted);font-size:13px;margin:0;}
 .narrative-box li{margin-bottom:4px;}
 .narrative-box strong{color:var(--text);font-weight:600;}
 .narrative-box code{font-family:var(--font-mono);background:var(--surface-alt);padding:1px 5px;border-radius:3px;font-size:12px;}
+.narrative-box pre{background:var(--surface-alt);border:1px solid var(--border);padding:10px 12px;border-radius:4px;overflow-x:auto;margin:0 0 10px;}
+.narrative-box pre code{background:none;padding:0;white-space:pre;}
 .narrative-box hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .hint{font-size:12px;color:var(--text-muted);margin-top:8px;}
 .error-banner{background:var(--red-bg);color:var(--red);border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;}
@@ -260,6 +262,7 @@ function renderIndicators() {
     const s = state[ind.key];
     const row = document.createElement("div");
     row.className = "ind-row";
+    row.setAttribute("data-row-key", ind.key);
 
     const nameCell = document.createElement("div");
     nameCell.setAttribute("data-label", "Indikator");
@@ -309,10 +312,22 @@ function renderIndicators() {
       const field = e.target.getAttribute("data-field");
       state[key][field] = e.target.value === "" ? null : parseFloat(e.target.value);
       recompute();
+      updateIndicatorRowVisual(key);
       renderScores();
       renderAllocation();
     });
   });
+}
+
+function updateIndicatorRowVisual(key) {
+  const s = state[key];
+  const row = document.querySelector(`.ind-row[data-row-key="${key}"]`);
+  if (!row) return;
+  const scoreCell = row.children[3];
+  const contribCell = row.children[4];
+  const scoreText = s.score === null || s.score === undefined ? "-" : (s.score > 0 ? "+1" : s.score < 0 ? "-1" : "0");
+  scoreCell.innerHTML = `<span class="score-pill badge ${scoreBadgeClass(s.score)}">${scoreText}</span>`;
+  contribCell.textContent = s.contribution !== null && s.contribution !== undefined ? s.contribution.toFixed(2) : "-";
 }
 
 function renderScores() {
@@ -434,7 +449,7 @@ async function generateNarrative() {
       }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || "Gagal generate narasi");
+    if (!res.ok || data.error) throw new Error((data.error || "Gagal generate narasi") + (data.detail ? " | " + data.detail : ""));
     box.innerHTML = marked.parse(data.narrative);
   } catch (err) {
     box.textContent = "Gagal membuat analisis: " + err.message;

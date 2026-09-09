@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/marked/marked.min.js"></script>
 <style>
 :root{
   --bg:#0A0A0B;
@@ -76,7 +77,15 @@ header p{color:var(--text-muted);font-size:13px;margin:0;}
 .total-line{display:flex;justify-content:space-between;padding-top:10px;font-size:12px;color:var(--text-muted);}
 .total-line.bad{color:var(--orange);}
 
-.narrative-box{white-space:pre-wrap;font-size:13px;line-height:1.7;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.narrative-box{white-space:normal;font-size:13px;line-height:1.7;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.narrative-box h1,.narrative-box h2,.narrative-box h3{font-family:var(--font-head);font-weight:600;color:var(--text);margin:16px 0 8px;}
+.narrative-box h3{font-size:14px;}
+.narrative-box p{margin:0 0 10px;}
+.narrative-box ul,.narrative-box ol{margin:0 0 10px;padding-left:20px;}
+.narrative-box li{margin-bottom:4px;}
+.narrative-box strong{color:var(--text);font-weight:600;}
+.narrative-box code{font-family:var(--font-mono);background:var(--surface-alt);padding:1px 5px;border-radius:3px;font-size:12px;}
+.narrative-box hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .hint{font-size:12px;color:var(--text-muted);margin-top:8px;}
 .error-banner{background:var(--red-bg);color:var(--red);border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;}
 .error-banner.show{display:block;}
@@ -426,7 +435,7 @@ async function generateNarrative() {
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || "Gagal generate narasi");
-    box.textContent = data.narrative;
+    box.innerHTML = marked.parse(data.narrative);
   } catch (err) {
     box.textContent = "Gagal membuat analisis: " + err.message;
   }

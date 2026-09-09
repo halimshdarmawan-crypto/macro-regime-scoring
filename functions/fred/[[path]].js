@@ -72,7 +72,7 @@ export async function onRequestGet(context) {
     url.searchParams.set("aggregation_method", preset.aggregation_method);
   }
   url.searchParams.set("sort_order", "desc");
-  url.searchParams.set("limit", "2");
+  url.searchParams.set("limit", "3");
   url.searchParams.set("file_type", "json");
   url.searchParams.set("api_key", env.FRED_API_KEY);
 

@@ -1,120 +1,126 @@
-// Proxy FRED API. Mengunci units/frequency/aggregation_method per indikator
-// supaya tidak ada lagi salah pilih transform seperti yang terjadi saat input manual.
-// API key disimpan sebagai Cloudflare Pages secret (FRED_API_KEY), tidak pernah
-// dikirim ke browser.
+// Proxy Gemini API untuk generate narasi analisis dari ringkasan skor.
+// API key disimpan sebagai Cloudflare Pages secret (GEMINI_API_KEY).
+// Catatan: nama model Gemini bisa berubah — cek console.cloud.google.com atau
+// dokumentasi Gemini kalau endpoint ini mulai gagal, ganti GEMINI_MODEL di bawah.
 
-const PRESETS = {
-  "yield-curve": {
-    series_id: "T10Y2Y",
-    units: "lin",
-    frequency: "m",
-    aggregation_method: "eop",
-  },
-  nfp: {
-    series_id: "PAYEMS",
-    units: "chg",
-    frequency: "m",
-  },
-  "retail-sales": {
-    series_id: "RSXFS",
-    units: "pch",
-    frequency: "m",
-  },
-  cpi: {
-    series_id: "CPIAUCSL",
-    units: "pc1",
-    frequency: "m",
-  },
-  "fed-funds": {
-    series_id: "FEDFUNDS",
-    units: "lin",
-    frequency: "m",
-  },
-  "crude-oil": {
-    series_id: "DCOILWTICO",
-    units: "pc1",
-    frequency: "m",
-    aggregation_method: "eop",
-  },
-};
+const GEMINI_MODEL = "gemini-3.6-flash";
 
-export async function onRequestGet(context) {
-  const { params, env } = context;
-  const path = Array.isArray(params.path)
-    ? params.path.join("/")
-    : String(params.path || "");
-  const preset = PRESETS[path];
+function buildPrompt(body) {
+  const {
+    growthScore,
+    inflationScore,
+    quadrant,
+    indicators = [],
+    allocation = [],
+  } = body;
 
-  if (!preset) {
+  const indikatorLines = indicators
+    .map((i) => `   * ${i.label}: ${i.scoreLabel}`)
+    .join("\n");
+
+  const alokasiLines = allocation
+    .map((a) => {
+      const gapSign = a.gap > 0 ? "+" : "";
+      return `   * ${a.name}: Saat Ini [${a.current}%] -> Target [${a.target}%] (Gap: ${gapSign}${a.gap}%)`;
+    })
+    .join("\n");
+
+  return `Saya menjalankan model Macro-Regime Tactical Asset Allocation bulanan untuk portofolio 5 aset (Saham, Kripto, Gold, Fixed Income, Cash/RDPU).
+
+Berikut adalah ringkasan output model bulan ini:
+
+* Growth Score: ${growthScore >= 0 ? "+" : ""}${growthScore.toFixed(2)}
+${indikatorLines}
+
+* Inflation Score: ${inflationScore >= 0 ? "+" : ""}${inflationScore.toFixed(2)}
+
+* Kuadran Makro Aktif: ${quadrant}
+
+* Alokasi Saat Ini vs Target Model:
+${alokasiLines}
+
+Tulis analisis dengan MENGIKUTI PERSIS kerangka berikut, tanpa menambah atau mengubah struktur:
+
+## 1. Dinamika Makro
+[2-3 kalimat ringkasan kenapa rezim "${quadrant}" ini terjadi]
+- **Growth Score (${growthScore.toFixed(2)}):** [1-2 kalimat, sebut indikator growth yang relevan]
+- **Inflation Score (${inflationScore.toFixed(2)}):** [1-2 kalimat, sebut indikator inflation yang relevan]
+
+**Kesimpulan Rezim:** [1 kalimat penutup]
+
+## 2. Rasional Rebalancing
+Untuk SETIAP aset di atas (urutan sama seperti data), tulis PERSIS format ini, satu per aset:
+**[Nama Aset] ([current]% → [target]% | Gap: [gap]%): [AKSI]**
+Rasional: [2-3 kalimat, hubungkan ke indikator yang relevan]
+
+## 3. Rencana Eksekusi Bertahap
+Tulis 3-4 tahap mingguan berurutan (Minggu 1, Minggu 2, dst) sebagai bullet list biasa. Setiap tahap: satu aksi konkret + satu alasan singkat.
+
+ATURAN FORMAT WAJIB (pelanggaran terhadap salah satu ini membuat jawaban tidak valid):
+1. Hanya gunakan Markdown standar: heading (##), bold (**teks**), bullet (-). Tidak ada elemen lain.
+2. DILARANG memakai notasi LaTeX/matematika apapun (seperti $\\rightarrow$, \\times, atau backslash lain). Untuk tanda panah pakai karakter → biasa.
+3. DILARANG memakai blok kode (tanda tiga backtick), tabel, atau diagram ASCII dalam bentuk apapun.
+4. WAJIB menyebut nama rezim PERSIS "${quadrant}" — jangan menciptakan nama rezim lain (misal jangan diganti jadi "Soft-Landing" atau istilah lain).
+5. WAJIB pakai bahasa akumulasi (AKUMULASI KUAT / AKUMULASI / HOLD-NETRAL / KURANGI EXPOSURE / DISTRIBUSI) untuk aksi, JANGAN pakai BUY/SELL.
+6. JANGAN tampilkan skor kepercayaan numerik tambahan di luar Growth Score dan Inflation Score yang sudah diberikan.`;
+}
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
+
+  if (!env.GEMINI_API_KEY) {
     return new Response(
-      JSON.stringify({
-        error: `Indikator tidak dikenal: ${path}`,
-        available: Object.keys(PRESETS),
-      }),
-      { status: 404, headers: { "content-type": "application/json" } }
-    );
-  }
-
-  if (!env.FRED_API_KEY) {
-    return new Response(
-      JSON.stringify({
-        error: "FRED_API_KEY belum diset sebagai Cloudflare Pages secret",
-      }),
+      JSON.stringify({ error: "GEMINI_API_KEY belum diset sebagai Cloudflare Pages secret" }),
       { status: 500, headers: { "content-type": "application/json" } }
     );
   }
 
-  const url = new URL("https://api.stlouisfed.org/fred/series/observations");
-  url.searchParams.set("series_id", preset.series_id);
-  url.searchParams.set("units", preset.units);
-  url.searchParams.set("frequency", preset.frequency);
-  if (preset.aggregation_method) {
-    url.searchParams.set("aggregation_method", preset.aggregation_method);
-  }
-  url.searchParams.set("sort_order", "desc");
-  url.searchParams.set("limit", "3");
-  url.searchParams.set("file_type", "json");
-  url.searchParams.set("api_key", env.FRED_API_KEY);
-
-  let fredResponse;
+  let body;
   try {
-    fredResponse = await fetch(url.toString());
+    body = await request.json();
+  } catch (err) {
+    return new Response(JSON.stringify({ error: "Body request bukan JSON valid" }), {
+      status: 400,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  const prompt = buildPrompt(body);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
+
+  let geminiResponse;
+  try {
+    geminiResponse = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.2,
+        },
+      }),
+    });
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: "Gagal menghubungi FRED", detail: String(err) }),
+      JSON.stringify({ error: "Gagal menghubungi Gemini", detail: String(err) }),
       { status: 502, headers: { "content-type": "application/json" } }
     );
   }
 
-  if (!fredResponse.ok) {
-    const detail = await fredResponse.text();
+  if (!geminiResponse.ok) {
+    const detail = await geminiResponse.text();
     return new Response(
-      JSON.stringify({
-        error: "FRED mengembalikan error",
-        status: fredResponse.status,
-        detail,
-      }),
+      JSON.stringify({ error: "Gemini mengembalikan error", status: geminiResponse.status, detail }),
       { status: 502, headers: { "content-type": "application/json" } }
     );
   }
 
-  const data = await fredResponse.json();
-  const observations = (data.observations || [])
-    .filter((o) => o.value !== ".")
-    .map((o) => ({ date: o.date, value: parseFloat(o.value) }));
+  const data = await geminiResponse.json();
+  const narrative =
+    data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+    "Gemini tidak mengembalikan teks. Coba lagi sebentar lagi.";
 
-  return new Response(
-    JSON.stringify({
-      indicator: path,
-      series_id: preset.series_id,
-      latest: observations[0] || null,
-      previous: observations[1] || null,
-    }),
-    {
-      headers: {
-        "content-type": "application/json",
-        "cache-control": "no-store",
-      },
-    }
-  );
+  return new Response(JSON.stringify({ narrative }), {
+    headers: { "content-type": "application/json" },
+  });
 }

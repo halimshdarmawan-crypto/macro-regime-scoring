@@ -1,473 +1,727 @@
-<!doctype html>
-<html lang="id" data-mode="dark">
+<!DOCTYPE html>
+<html lang="id">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Macro Regime Scoring</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Barbell Emas × Kripto DCA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
-:root{
-  --bg:#0A0A0B;
-  --surface:#131316;
-  --surface-alt:#1A1A1D;
-  --border:#232326;
-  --text:#F4F4F5;
-  --text-muted:#8B8B93;
-  --accent:#4F8A82;
-  --accent-fg:#0A0A0B;
-  --green:#00D084; --green-bg:#0C2A21;
-  --blue:#3B82F6; --blue-bg:#0E1E38;
-  --amber:#F5C518; --amber-bg:#2A2408;
-  --orange:#F97316; --orange-bg:#2A1608;
-  --red:#FF4757; --red-bg:#2A0E12;
-  --gray:#6B7280; --gray-bg:#1C1C1E;
-  --radius:6px;
-  --font-body:'Inter',sans-serif;
-  --font-head:'Inter Tight',sans-serif;
-  --font-mono:'IBM Plex Mono',monospace;
-}
-*{box-sizing:border-box;}
-body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.6;}
-.app{max-width:760px;margin:0 auto;padding:20px 16px 60px;}
-header{margin-bottom:20px;}
-header h1{font-family:var(--font-head);font-weight:600;font-size:20px;margin:0 0 4px;}
-header p{color:var(--text-muted);font-size:13px;margin:0;}
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
-.section-title{font-family:var(--font-head);font-weight:600;font-size:15px;margin:0 0 12px;display:flex;align-items:center;justify-content:space-between;}
-.section-title .sub{font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--text-muted);}
-.btn{font-family:var(--font-body);font-weight:500;font-size:13px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-alt);color:var(--text);padding:8px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
-.btn:hover{border-color:var(--accent);}
-.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600;}
-.btn:disabled{opacity:0.5;cursor:not-allowed;}
-.btn i{width:15px;height:15px;}
+  :root{
+    --bg-base:#0A0A0B; --bg-panel:#131417; --bg-panel-alt:#1A1B1F;
+    --border:#2A2C31; --text-primary:#E8E9EA; --text-muted:#8A8D93;
+    --brand-accent:#D9A441;
+    --status-green:#00D084; --status-blue:#3B82F6; --status-amber:#F5C518;
+    --status-orange:#F97316; --status-red:#FF4757; --status-gray:#6B7280;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg-base); color:var(--text-primary);
+    font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;
+    padding-bottom:48px;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums;}
+  a{color:var(--brand-accent);}
+  .wrap{max-width:920px; margin:0 auto; padding:0 16px;}
 
-.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.score-card{background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
-.score-card .label{font-size:12px;color:var(--text-muted);margin-bottom:6px;}
-.score-card .value{font-family:var(--font-mono);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;}
-.score-card.wide{grid-column:1 / -1;}
-.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;font-family:var(--font-body);}
-.badge.green{background:var(--green-bg);color:var(--green);}
-.badge.blue{background:var(--blue-bg);color:var(--blue);}
-.badge.amber{background:var(--amber-bg);color:var(--amber);}
-.badge.orange{background:var(--orange-bg);color:var(--orange);}
-.badge.red{background:var(--red-bg);color:var(--red);}
-.badge.gray{background:var(--gray-bg);color:var(--gray);}
+  header.top{
+    position:sticky; top:0; z-index:20; background:rgba(10,10,11,0.92);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--border);
+    padding:14px 0;
+  }
+  header.top .row{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  header.top h1{font-size:16px; margin:0; font-weight:600;}
+  header.top .sub{font-size:12px; color:var(--text-muted); margin-top:2px;}
+  .badge{
+    display:inline-flex; align-items:center; gap:6px; padding:4px 10px;
+    border-radius:3px; font-size:12px; font-weight:600; font-family:'IBM Plex Mono',monospace;
+    border:1px solid var(--border); background:var(--bg-panel-alt);
+  }
+  .badge.dot::before{content:''; width:6px; height:6px; border-radius:50%; background:currentColor;}
+  .badge-green{color:var(--status-green); border-color:rgba(0,208,132,0.35);}
+  .badge-amber{color:var(--status-amber); border-color:rgba(245,197,24,0.35);}
+  .badge-red{color:var(--status-red); border-color:rgba(255,71,87,0.35);}
+  .badge-gray{color:var(--status-gray);}
+  .badge-blue{color:var(--status-blue); border-color:rgba(59,130,246,0.35);}
 
-.ind-row{display:grid;grid-template-columns:1.6fr 0.8fr 0.8fr 0.5fr 0.6fr;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
-.ind-row:last-child{border-bottom:none;}
-.ind-row.head{color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:0.03em;}
-.ind-name{display:flex;flex-direction:column;}
-.ind-name .tag{font-size:11px;color:var(--text-muted);}
-.ind-val{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
-.ind-val input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);padding:5px 6px;font-size:13px;}
-.ind-val input:focus{outline:none;border-color:var(--accent);}
-.score-pill{font-family:var(--font-mono);font-weight:600;padding:2px 8px;border-radius:4px;text-align:center;font-size:12px;}
-.status-line{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .stickybar{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
+    background:var(--border); border:1px solid var(--border); border-radius:4px;
+    overflow:hidden; margin-top:14px;
+  }
+  .stickybar .cell{background:var(--bg-panel); padding:12px 14px;}
+  .stickybar .cell .lbl{font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;}
+  .stickybar .cell .val{font-size:18px; font-weight:600; margin-top:4px;}
 
-.alloc-row{display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.7fr 0.9fr;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
-.alloc-row:last-child{border-bottom:none;}
-.alloc-row.head{color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:0.03em;}
-.alloc-row input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);padding:5px 6px;font-size:13px;}
-.alloc-row input:focus{outline:none;border-color:var(--accent);}
-.gap-pos{color:var(--green);} .gap-neg{color:var(--red);} .gap-zero{color:var(--text-muted);}
-.total-line{display:flex;justify-content:space-between;padding-top:10px;font-size:12px;color:var(--text-muted);}
-.total-line.bad{color:var(--orange);}
+  section{margin-top:20px;}
+  .panel{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:4px;
+    padding:16px;
+  }
+  .panel h2{font-size:13px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted);
+    margin:0 0 14px 0; font-weight:600; display:flex; align-items:center; justify-content:space-between;}
+  .panel h2 .hint{font-size:11px; color:var(--text-muted); text-transform:none; letter-spacing:0; font-weight:400;}
 
-.narrative-box{white-space:normal;font-size:13px;line-height:1.7;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
-.narrative-box h1,.narrative-box h2,.narrative-box h3{font-family:var(--font-head);font-weight:600;color:var(--text);margin:16px 0 8px;}
-.narrative-box h3{font-size:14px;}
-.narrative-box p{margin:0 0 10px;}
-.narrative-box ul,.narrative-box ol{margin:0 0 10px;padding-left:20px;}
-.narrative-box li{margin-bottom:4px;}
-.narrative-box strong{color:var(--text);font-weight:600;}
-.narrative-box code{font-family:var(--font-mono);background:var(--surface-alt);padding:1px 5px;border-radius:3px;font-size:12px;}
-.narrative-box pre{background:var(--surface-alt);border:1px solid var(--border);padding:10px 12px;border-radius:4px;overflow-x:auto;margin:0 0 10px;}
-.narrative-box pre code{background:none;padding:0;white-space:pre;}
-.narrative-box hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
-.hint{font-size:12px;color:var(--text-muted);margin-top:8px;}
-.error-banner{background:var(--red-bg);color:var(--red);border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;}
-.error-banner.show{display:block;}
-.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.25);border-top-color:currentColor;border-radius:50%;animation:spin 0.7s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-footer{color:var(--text-muted);font-size:11px;line-height:1.6;margin-top:24px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  @media(max-width:640px){ .grid2,.grid3{grid-template-columns:1fr;} .stickybar{grid-template-columns:1fr;} }
 
-@media (max-width:600px){
-  .ind-row, .alloc-row{grid-template-columns:1fr;gap:4px;padding:12px 0;}
-  .ind-row.head, .alloc-row.head{display:none;}
-  .ind-row > div::before, .alloc-row > div::before{content:attr(data-label);display:block;font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;}
-  .score-grid{grid-template-columns:1fr;}
-}
+  label{display:block; font-size:11px; color:var(--text-muted); margin-bottom:4px;}
+  input[type=number], input[type=text], input[type=date]{
+    width:100%; background:var(--bg-panel-alt); border:1px solid var(--border); color:var(--text-primary);
+    padding:8px 10px; border-radius:3px; font-family:'IBM Plex Mono',monospace; font-size:13px;
+  }
+  input:focus{outline:none; border-color:var(--brand-accent);}
+  .field{margin-bottom:10px;}
+  .field .note{font-size:10px; color:var(--text-muted); margin-top:3px;}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{text-align:left; color:var(--text-muted); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--border); font-size:11px; text-transform:uppercase; letter-spacing:0.03em;}
+  td{padding:7px 8px; border-bottom:1px solid var(--border);}
+  td.num{font-family:'IBM Plex Mono',monospace; text-align:right;}
+  tr:last-child td{border-bottom:none;}
+
+  .assetcard{background:var(--bg-panel-alt); border:1px solid var(--border); border-radius:4px; padding:14px;}
+  .assetcard .name{font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;}
+  .assetcard .pct{font-size:22px; font-weight:700; margin-top:4px; font-family:'IBM Plex Mono',monospace;}
+  .assetcard .rp{font-size:14px; color:var(--text-primary); margin-top:2px; font-family:'IBM Plex Mono',monospace;}
+  .assetcard .unit{font-size:11px; color:var(--text-muted); margin-top:6px;}
+
+  .segbar{display:flex; height:22px; border-radius:3px; overflow:hidden; border:1px solid var(--border); margin:10px 0 6px;}
+  .segbar div{display:flex; align-items:center; justify-content:center; font-size:10.5px; font-family:'IBM Plex Mono',monospace; color:#0A0A0B; font-weight:700;}
+  .seg-emas{background:#D9A441;}
+  .seg-btc{background:#F97316;}
+  .seg-sol{background:#00D084;}
+  .legend{display:flex; gap:16px; font-size:11px; color:var(--text-muted); flex-wrap:wrap;}
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .legend i{width:9px; height:9px; border-radius:2px; display:inline-block;}
+
+  button{
+    background:var(--brand-accent); color:#1A1206; border:none; padding:9px 16px;
+    border-radius:3px; font-weight:600; font-size:13px; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  button:hover{filter:brightness(1.08);}
+  button.secondary{background:var(--bg-panel-alt); color:var(--text-primary); border:1px solid var(--border);}
+  button:disabled{opacity:0.5; cursor:not-allowed;}
+
+  .rulebox{background:var(--bg-panel-alt); border:1px solid var(--border); border-radius:4px; padding:12px 14px; font-size:12.5px; color:var(--text-muted); line-height:1.6;}
+  .rulebox b{color:var(--text-primary);}
+
+  .narrative-box{font-size:13.5px; line-height:1.7;}
+  .narrative-box h2{font-size:14px; color:var(--brand-accent); text-transform:none; letter-spacing:0; margin:16px 0 8px;}
+  .narrative-box h2:first-child{margin-top:0;}
+  .narrative-box ul{padding-left:20px; margin:6px 0;}
+  .narrative-box strong{color:var(--text-primary);}
+
+  .staleflag{color:var(--status-amber); font-size:11px;}
+  .okflag{color:var(--status-green); font-size:11px;}
+  footer{margin-top:32px; text-align:center; font-size:11px; color:var(--text-muted); line-height:1.7;}
+
+  .skeleton{background:linear-gradient(90deg,var(--bg-panel-alt) 25%,#22242A 37%,var(--bg-panel-alt) 63%); background-size:400% 100%; animation:sk 1.4s ease infinite; border-radius:3px; height:14px;}
+  @keyframes sk{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
 </style>
 </head>
 <body>
-<div class="app">
 
-  <header>
-    <h1>Macro Regime Scoring</h1>
-    <p>Tactical asset allocation berbasis rezim makro &middot; update <span id="lastUpdated">-</span></p>
-  </header>
+<header class="top">
+  <div class="wrap">
+    <div class="row">
+      <div>
+        <h1>Barbell Emas × Kripto DCA</h1>
+        <div class="sub">Bias alokasi bulanan — bukan sinyal jual, bukan timing harian</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span id="lastUpdated" class="badge mono">memuat…</span>
+        <button class="secondary" id="btnRefresh" style="padding:7px 12px; font-size:12px;">Refresh</button>
+      </div>
+    </div>
+    <div class="stickybar">
+      <div class="cell">
+        <div class="lbl">Rezim dipakai</div>
+        <div class="val mono" id="mRegimeUsed">—</div>
+      </div>
+      <div class="cell">
+        <div class="lbl">Status kunci 60 hari</div>
+        <div class="val mono" id="mLockStatus">—</div>
+      </div>
+      <div class="cell">
+        <div class="lbl">DCA bulan ini</div>
+        <div class="val mono" id="mDcaAmount">—</div>
+      </div>
+    </div>
+  </div>
+</header>
 
-  <div id="errorBanner" class="error-banner"></div>
+<div class="wrap">
 
   <section class="panel">
-    <div class="section-title">
-      Ringkasan skor
-      <button class="btn" id="refreshBtn"><i data-lucide="refresh-cw"></i> Ambil data terbaru</button>
+    <h2>Profil &amp; Aturan Strategis <span class="hint">split jarang diubah — hanya ubah kalau memang berniat</span></h2>
+    <div class="grid3">
+      <div class="field">
+        <label>Rencana DCA bulan ini (Rp)</label>
+        <input type="number" id="inDcaAmount" value="3000000" step="50000">
+      </div>
+      <div class="field">
+        <label>Emas strategis (0–1)</label>
+        <input type="number" id="inSplitEmas" value="0.55" step="0.01" min="0" max="1">
+        <div class="note">Kripto strategis = 1 − ini. Terkunci 55/45 per keputusan awal.</div>
+      </div>
+      <div class="field">
+        <label>Ambang konversi ETF→fisik (gram)</label>
+        <input type="number" id="inThresholdGram" value="10" step="1">
+      </div>
+      <div class="field">
+        <label>Lantai emas (min, 0–1)</label>
+        <input type="number" id="inFloorEmas" value="0.25" step="0.01">
+      </div>
+      <div class="field">
+        <label>Lantai kripto (min, 0–1)</label>
+        <input type="number" id="inFloorKripto" value="0.2" step="0.01">
+      </div>
+      <div class="field">
+        <label>Kap SOL dari kripto (0–1)</label>
+        <input type="number" id="inSolCap" value="0.3" step="0.01">
+      </div>
+      <div class="field">
+        <label>Tilt maks risk-on/off (poin)</label>
+        <input type="number" id="inTiltRiskOnOff" value="0.1" step="0.01">
+      </div>
+      <div class="field">
+        <label>Tilt maks stagflasi ke emas (poin)</label>
+        <input type="number" id="inTiltStagflasi" value="0.15" step="0.01">
+      </div>
+      <div class="field">
+        <label>Ambang |skor| agar rezim pindah</label>
+        <input type="number" id="inThreshold" value="0.15" step="0.01">
+      </div>
+      <div class="field">
+        <label>Kunci setelah pindah (hari)</label>
+        <input type="number" id="inLockDays" value="60" step="1">
+      </div>
+      <div class="field">
+        <label>Rezim terkunci saat ini</label>
+        <input type="text" id="inLockedRegime" value="Netral">
+      </div>
+      <div class="field">
+        <label>Tanggal rezim terakhir pindah</label>
+        <input type="date" id="inLockedDate">
+      </div>
     </div>
-    <div class="score-grid">
-      <div class="score-card">
-        <div class="label">Growth score</div>
-        <div class="value" id="growthScoreVal">-</div>
+    <div class="rulebox" id="profileStatus" style="margin-top:6px;"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Harga &amp; Kurs <span class="hint" id="priceFreshness"></span></h2>
+    <div class="grid3">
+      <div class="field">
+        <label>USD/IDR</label>
+        <input type="number" id="inUsdIdr" step="1">
       </div>
-      <div class="score-card">
-        <div class="label">Inflation score</div>
-        <div class="value" id="inflationScoreVal">-</div>
+      <div class="field">
+        <label>XAU/USD (spot, per oz)</label>
+        <input type="number" id="inXauUsd" step="1">
       </div>
-      <div class="score-card wide">
-        <div class="label">Kuadran makro aktif</div>
-        <div class="value" id="quadrantVal" style="font-size:18px;">-</div>
-        <div style="margin-top:8px;"><span class="badge gray" id="verdictBadge">-</span></div>
+      <div class="field">
+        <label>Harga beli Antam/fisik (Rp/gram)</label>
+        <input type="number" id="inAntamBeli" value="1600000" step="1000">
+        <div class="note">Tidak ada API gratis untuk Antam — isi manual dari logammulia.com.</div>
+      </div>
+      <div class="field">
+        <label>BTC (USD)</label>
+        <input type="number" id="inBtcUsd" step="1">
+      </div>
+      <div class="field">
+        <label>SOL (USD)</label>
+        <input type="number" id="inSolUsd" step="1">
+      </div>
+      <div class="field">
+        <label>Harga ekuivalen ETF emas (Rp/gram, opsional)</label>
+        <input type="number" id="inEtfOverride" placeholder="kosongkan = pakai spot">
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="section-title">
-      Indikator &amp; skor
-      <span class="sub">6 auto-fetch, 1 manual (ISM PMI)</span>
+    <h2>Overlay Makro <span class="hint">5 indikator — auto-fetch FRED, bisa ditimpa manual</span></h2>
+    <table id="macroTable">
+      <thead><tr><th>Indikator</th><th>Sumbu</th><th class="num">Bulan ini</th><th class="num">Bulan lalu</th><th class="num">Skor</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="grid3" style="margin-top:14px;">
+      <div class="rulebox"><b>Growth score</b><br><span class="mono" id="mGrowth">—</span></div>
+      <div class="rulebox"><b>Financial conditions tightness</b><br><span class="mono" id="mFc">—</span></div>
+      <div class="rulebox"><b>Inflation momentum</b><br><span class="mono" id="mInflasi">—</span></div>
     </div>
-    <div class="ind-row head">
-      <div>Indikator</div><div>Bulan ini</div><div>Bulan lalu</div><div>Skor</div><div>Kontribusi</div>
+    <div class="rulebox" style="margin-top:10px;">
+      Rezim mentah: <b class="mono" id="mRegimeRaw">—</b> &nbsp;·&nbsp;
+      Rezim dipakai (hormati kunci): <b class="mono" id="mRegimeUsed2">—</b><br>
+      <span id="mLockNote"></span>
     </div>
-    <div id="indicatorList"></div>
   </section>
 
   <section class="panel">
-    <div class="section-title">Alokasi: target vs saat ini</div>
-    <div class="alloc-row head">
-      <div>Aset</div><div>Target</div><div>Saat ini</div><div>Gap</div><div>Aksi</div>
+    <h2>Pecahan DCA Bulan Ini</h2>
+    <div class="segbar" id="segbar"></div>
+    <div class="legend">
+      <span><i style="background:#D9A441"></i>Emas</span>
+      <span><i style="background:#F97316"></i>BTC</span>
+      <span><i style="background:#00D084"></i>SOL</span>
     </div>
-    <div id="allocationList"></div>
-    <div class="total-line" id="allocTotalLine">Total alokasi saat ini: 0%</div>
+    <div class="grid3" style="margin-top:14px;">
+      <div class="assetcard">
+        <div class="name">Emas (ETF dulu)</div>
+        <div class="pct" id="cEmasPct">—</div>
+        <div class="rp" id="cEmasRp">—</div>
+        <div class="unit" id="cEmasUnit">—</div>
+      </div>
+      <div class="assetcard">
+        <div class="name">BTC</div>
+        <div class="pct" id="cBtcPct">—</div>
+        <div class="rp" id="cBtcRp">—</div>
+        <div class="unit" id="cBtcUnit">—</div>
+      </div>
+      <div class="assetcard">
+        <div class="name">SOL</div>
+        <div class="pct" id="cSolPct">—</div>
+        <div class="rp" id="cSolRp">—</div>
+        <div class="unit" id="cSolUnit">—</div>
+      </div>
+    </div>
+    <div class="rulebox" style="margin-top:10px;" id="solCapCheck"></div>
   </section>
 
   <section class="panel">
-    <div class="section-title">Analisis AI</div>
-    <button class="btn primary" id="generateBtn"><i data-lucide="sparkles"></i> Generate analisis</button>
-    <div class="hint">Narasi dibuat oleh Gemini berdasarkan skor di atas &mdash; bukan nasihat investasi, cek ulang sebelum dieksekusi.</div>
-    <div id="narrativeBox" class="narrative-box" style="display:none;"></div>
+    <h2>Stok Saya <span class="hint">opsional — untuk sinyal lunak, bukan sinyal jual</span></h2>
+    <div class="grid3">
+      <div class="field"><label>Emas fisik (gram)</label><input type="number" id="inStokFisik" value="0" step="0.1"></div>
+      <div class="field"><label>Emas ETF (gram)</label><input type="number" id="inStokEtf" value="0" step="0.1"></div>
+      <div class="field"><label>BTC (coin)</label><input type="number" id="inStokBtc" value="0" step="0.0001"></div>
+      <div class="field"><label>SOL (coin)</label><input type="number" id="inStokSol" value="0" step="0.01"></div>
+    </div>
+    <div class="rulebox" id="stokSummary" style="margin-top:6px;"></div>
+    <div class="rulebox" id="stokSignal" style="margin-top:8px;"></div>
+    <div class="rulebox" id="etfSignal" style="margin-top:8px;"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Penjelasan</h2>
+    <p style="font-size:12.5px; color:var(--text-muted); margin-top:0;">
+      Gemini merangkai angka di atas jadi bahasa Indonesia yang enak dibaca — tidak menghitung ulang apa pun,
+      tidak menyarankan all-in. Dipanggil hanya saat kamu tekan tombol, dan dicache selama input tidak berubah.
+    </p>
+    <button id="btnExplain">Jelaskan</button>
+    <span id="explainStatus" style="font-size:11px; color:var(--text-muted); margin-left:10px;"></span>
+    <div class="narrative-box" id="narrativeBox" style="margin-top:14px;"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Ringkasan untuk Jurnal</h2>
+    <p style="font-size:12.5px; color:var(--text-muted); margin-top:0;">
+      Alat ini tidak menyimpan jurnal — catat tetap di sheet <b>06_Jurnal</b> workbook. Tombol ini cuma menyalin ringkasan bulan ini supaya tinggal tempel.
+    </p>
+    <button class="secondary" id="btnCopyJournal">Salin ringkasan bulan ini</button>
+    <span id="copyStatus" style="font-size:11px; color:var(--text-muted); margin-left:10px;"></span>
   </section>
 
   <footer>
-    Model ini alat bantu bias risiko jangka menengah (3-12 bulan), bukan sinyal timing harian. Tidak ada skor kepercayaan numerik yang ditampilkan secara sengaja untuk menghindari kesan presisi palsu. ISM Manufacturing PMI diisi manual karena tidak ada API gratis yang reliable.
+    Alat bias DCA pribadi — bukan nasihat keuangan. Skor tanh &amp; kuadran overlay adalah penyederhanaan.<br>
+    Sumber: FRED (T10Y2Y, DFII10, DTWEXBGS sbg proxy USD index — bukan ICE DXY, CPIAUCSL, DCOILWTICO, GOLDAMGBD228NLBM), CoinGecko (BTC/SOL), Frankfurter (USD/IDR), Antam/Logam Mulia (manual).
   </footer>
-
 </div>
 
 <script>
-const INDICATORS = [
-  { key:"yield_curve", label:"Yield Curve 10Y-2Y", timing:"Leading", axis:"growth", weight:0.40, endpoint:"/fred/yield-curve", scoreFn:(c)=> c>0.1?1:c<-0.1?-1:0 },
-  { key:"ism_pmi", label:"ISM Manufacturing PMI", timing:"Leading", axis:"growth", weight:0.30, manual:true, scoreFn:(c)=> c>52?1:c<48?-1:0 },
-  { key:"nfp", label:"Nonfarm Payrolls (Δ ribu)", timing:"Coincident", axis:"growth", weight:0.15, endpoint:"/fred/nfp", scoreFn:(c)=> c>150?1:c<50?-1:0 },
-  { key:"retail_sales", label:"Retail Sales MoM (%)", timing:"Coincident", axis:"growth", weight:0.15, endpoint:"/fred/retail-sales", scoreFn:(c)=> c>0.3?1:c<-0.1?-1:0 },
-  { key:"cpi", label:"CPI YoY (%)", timing:"Lagging", axis:"inflation", weight:0.35, endpoint:"/fred/cpi", scoreFn:(c,p)=> c>p+0.1?1:c<p-0.1?-1:0 },
-  { key:"fed_funds", label:"Fed Funds Rate (%)", timing:"Lagging", axis:"inflation", weight:0.30, endpoint:"/fred/fed-funds", scoreFn:(c,p)=> c>p?1:c<p?-1:0 },
-  { key:"crude_oil", label:"Crude Oil WTI YoY (%)", timing:"Leading", axis:"inflation", weight:0.35, endpoint:"/fred/crude-oil", scoreFn:(c)=> c>10?1:c<-10?-1:0 },
-];
+const $ = (id) => document.getElementById(id);
+const fmtIDR = (n) => 'Rp' + Math.round(n).toLocaleString('id-ID');
+const fmtPct = (n) => (n*100).toFixed(1).replace('.', ',') + '%';
+const fmtScore = (n) => (n>=0?'+':'') + n.toFixed(2);
+const clamp = (v,lo,hi) => Math.min(hi, Math.max(lo, v));
+const todayISO = () => new Date().toISOString().slice(0,10);
+const daysBetween = (a,b) => Math.round((new Date(a) - new Date(b)) / 86400000);
 
-const REGIME_MATRIX = {
-  "K1: Goldilocks":     { kondisi:"Growth naik, Inflasi turun", saham:0.50, kripto:0.20, gold:0.10, fixedIncome:0.10, cash:0.10, verdict:"AKUMULASI KUAT", color:"green" },
-  "K2: Reflation":      { kondisi:"Growth naik, Inflasi naik",  saham:0.40, kripto:0.20, gold:0.20, fixedIncome:0.05, cash:0.15, verdict:"AKUMULASI",      color:"green" },
-  "Netral/Transisi":    { kondisi:"Sinyal campuran / belum jelas", saham:0.30, kripto:0.10, gold:0.20, fixedIncome:0.15, cash:0.25, verdict:"HOLD-NETRAL", color:"blue" },
-  "K3: Stagflation":    { kondisi:"Growth turun, Inflasi naik", saham:0.15, kripto:0.05, gold:0.35, fixedIncome:0.10, cash:0.35, verdict:"KURANGI EXPOSURE", color:"orange" },
-  "K4: Deflasi/Resesi": { kondisi:"Growth turun, Inflasi turun", saham:0.10, kripto:0.05, gold:0.20, fixedIncome:0.25, cash:0.40, verdict:"DISTRIBUSI", color:"red" },
-};
+$('inLockedDate').value = todayISO();
 
-const ASSET_LABELS = { saham:"Saham", kripto:"Kripto", gold:"Gold", fixedIncome:"Fixed Income", cash:"Cash/RDPU" };
+let quotesCache = null;
+let lastNarrativeHash = null;
 
-const state = {};
-INDICATORS.forEach(ind => {
-  state[ind.key] = { current: null, previous: null, score: null, contribution: null, status: ind.manual ? "manual" : "idle", date: null };
+// ---- Cache layer (localStorage, TTL per data type) ----
+function cacheGet(key, ttlMs){
+  try{
+    const raw = localStorage.getItem(key);
+    if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(Date.now() - obj.t > ttlMs) return null;
+    return obj.v;
+  }catch(e){ return null; }
+}
+function cacheSet(key, v){
+  try{ localStorage.setItem(key, JSON.stringify({t:Date.now(), v})); }catch(e){}
+}
+
+async function fetchQuotes(force){
+  const CACHE_KEY = 'barbell:quotes:v1';
+  const TTL = 15*60*1000; // 15 menit, sesuai cadence harga
+  if(!force){
+    const cached = cacheGet(CACHE_KEY, TTL);
+    if(cached) return {data: cached, stale:false, fromCache:true};
+  }
+  try{
+    const res = await fetch('/quotes/all');
+    const data = await res.json();
+    cacheSet(CACHE_KEY, data);
+    return {data, stale:false, fromCache:false};
+  }catch(e){
+    const stale = cacheGet(CACHE_KEY, Infinity);
+    if(stale) return {data: stale, stale:true, fromCache:true};
+    return {data:null, stale:true, fromCache:false};
+  }
+}
+
+function applyQuotesToInputs(q){
+  if(!q) return [];
+  const staleList = [];
+  if(q.usdidr && q.usdidr.usdidr) $('inUsdIdr').value = q.usdidr.usdidr;
+  else staleList.push('USD/IDR');
+
+  if(q.gold && q.gold.latest) $('inXauUsd').value = q.gold.latest.value;
+  else staleList.push('Gold XAU/USD');
+
+  if(q.crypto && q.crypto.btc_usd) $('inBtcUsd').value = q.crypto.btc_usd;
+  else staleList.push('BTC');
+  if(q.crypto && q.crypto.sol_usd) $('inSolUsd').value = q.crypto.sol_usd;
+  else staleList.push('SOL');
+
+  const macroRows = [
+    {key:'yield_curve', label:'Yield Curve 10Y-2Y (pp)', axis:'Growth', rule:'TANH(nilai/0.15)'},
+    {key:'real_yield', label:'Real yield 10y DFII10 (%)', axis:'FC ketat', rule:'TANH((nilai-1.20)/0.60)'},
+    {key:'dxy_proxy', label:'US Dollar Index — Fed Broad (proxy, bukan ICE DXY)', axis:'FC ketat', rule:'TANH((bulan ini−lalu)/1.50)'},
+    {key:'cpi_yoy', label:'CPI YoY (%)', axis:'Inflasi', rule:'TANH((bulan ini−lalu)/0.15)'},
+    {key:'wti_yoy', label:'WTI YoY (%)', axis:'Inflasi', rule:'TANH(nilai/15)'},
+  ];
+  macroRows.forEach(r=>{
+    const m = q.macro && q.macro[r.key];
+    if(m && m.latest){
+      $('macroIn_'+r.key).value = m.latest.value;
+      if(m.previous) $('macroPrev_'+r.key).value = m.previous.value;
+    } else {
+      staleList.push(r.label);
+    }
+  });
+  return staleList;
+}
+
+function buildMacroTable(){
+  const rows = [
+    {key:'yield_curve', label:'Yield Curve 10Y-2Y (pp)', axis:'Growth'},
+    {key:'real_yield', label:'Real yield 10y DFII10 (%)', axis:'FC ketat'},
+    {key:'dxy_proxy', label:'US Dollar Index (Fed Broad, proxy)', axis:'FC ketat'},
+    {key:'cpi_yoy', label:'CPI YoY (%)', axis:'Inflasi'},
+    {key:'wti_yoy', label:'WTI YoY (%)', axis:'Inflasi'},
+  ];
+  const tbody = document.querySelector('#macroTable tbody');
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.label}</td>
+      <td class="mono" style="color:var(--text-muted); font-size:11px;">${r.axis}</td>
+      <td class="num"><input type="number" step="0.01" id="macroIn_${r.key}" style="width:90px; text-align:right;"></td>
+      <td class="num"><input type="number" step="0.01" id="macroPrev_${r.key}" style="width:90px; text-align:right;"></td>
+      <td class="num mono" id="macroScore_${r.key}">—</td>
+    </tr>
+  `).join('');
+}
+buildMacroTable();
+
+// ---- Core calculation, mirrors Excel exactly ----
+function computeAll(){
+  const profil = {
+    dcaAmount: parseFloat($('inDcaAmount').value)||0,
+    splitEmas: parseFloat($('inSplitEmas').value)||0.55,
+    thresholdGram: parseFloat($('inThresholdGram').value)||10,
+    floorEmas: parseFloat($('inFloorEmas').value)||0.25,
+    floorKripto: parseFloat($('inFloorKripto').value)||0.2,
+    solCap: parseFloat($('inSolCap').value)||0.3,
+    tiltRiskOnOff: parseFloat($('inTiltRiskOnOff').value)||0.1,
+    tiltStagflasi: parseFloat($('inTiltStagflasi').value)||0.15,
+    threshold: parseFloat($('inThreshold').value)||0.15,
+    lockDays: parseFloat($('inLockDays').value)||60,
+    lockedRegime: $('inLockedRegime').value.trim()||'Netral',
+    lockedDate: $('inLockedDate').value || todayISO(),
+    solDefaultShare: 0.2,
+  };
+  const splitKripto = 1 - profil.splitEmas;
+
+  const harga = {
+    usdidr: parseFloat($('inUsdIdr').value)||0,
+    xauusd: parseFloat($('inXauUsd').value)||0,
+    antamBeli: parseFloat($('inAntamBeli').value)||0,
+    btcUsd: parseFloat($('inBtcUsd').value)||0,
+    solUsd: parseFloat($('inSolUsd').value)||0,
+  };
+  const gramPerOz = 31.1034768;
+  const spotIdrPerGram = (harga.usdidr && harga.xauusd) ? (harga.xauusd*harga.usdidr/gramPerOz) : 0;
+  const etfOverrideVal = parseFloat($('inEtfOverride').value);
+  const etfEquivalent = !isNaN(etfOverrideVal) && etfOverrideVal>0 ? etfOverrideVal : spotIdrPerGram;
+  const btcRp = harga.btcUsd*harga.usdidr;
+  const solRp = harga.solUsd*harga.usdidr;
+
+  // ---- Overlay makro (persis rumus 03_Makro) ----
+  const D6 = parseFloat($('macroIn_yield_curve').value);
+  const D7 = parseFloat($('macroIn_real_yield').value);
+  const D8 = parseFloat($('macroIn_dxy_proxy').value), E8 = parseFloat($('macroPrev_dxy_proxy').value);
+  const D9 = parseFloat($('macroIn_cpi_yoy').value), E9 = parseFloat($('macroPrev_cpi_yoy').value);
+  const D10 = parseFloat($('macroIn_wti_yoy').value);
+
+  const F6 = isNaN(D6) ? 0 : Math.tanh(D6/0.15);
+  const F7 = isNaN(D7) ? 0 : Math.tanh((D7-1.2)/0.6);
+  const F8 = (isNaN(D8)||isNaN(E8)) ? 0 : Math.tanh((D8-E8)/1.5);
+  const F9 = (isNaN(D9)||isNaN(E9)) ? 0 : Math.tanh((D9-E9)/0.15);
+  const F10 = isNaN(D10) ? 0 : Math.tanh(D10/15);
+
+  $('macroScore_yield_curve').textContent = fmtScore(F6);
+  $('macroScore_real_yield').textContent = fmtScore(F7);
+  $('macroScore_dxy_proxy').textContent = fmtScore(F8);
+  $('macroScore_cpi_yoy').textContent = fmtScore(F9);
+  $('macroScore_wti_yoy').textContent = fmtScore(F10);
+
+  const G7 = 0.54*F7, G8 = 0.46*F8, G9 = 0.5*F9, G10 = 0.5*F10;
+  const growthScore = F6;
+  const fcScore = G7+G8;
+  const inflasiScore = G9+G10;
+
+  let regimeRaw;
+  if(growthScore < -profil.threshold && inflasiScore > profil.threshold) regimeRaw = 'Stagflation';
+  else if(growthScore > profil.threshold && fcScore < -profil.threshold) regimeRaw = 'Risk-on';
+  else if(fcScore > profil.threshold || (growthScore < -profil.threshold && inflasiScore <= profil.threshold)) regimeRaw = 'Risk-off';
+  else regimeRaw = 'Netral';
+
+  const daysSince = daysBetween(todayISO(), profil.lockedDate);
+  const stillLocked = daysSince < profil.lockDays;
+  const regimeUsed = stillLocked ? profil.lockedRegime : regimeRaw;
+  const lockDaysLeft = Math.max(0, profil.lockDays - daysSince);
+  const needLockUpdate = !stillLocked && regimeRaw !== profil.lockedRegime;
+
+  let tiltEmas;
+  if(regimeUsed==='Stagflation') tiltEmas = profil.tiltStagflasi;
+  else if(regimeUsed==='Risk-off') tiltEmas = profil.tiltRiskOnOff;
+  else if(regimeUsed==='Risk-on') tiltEmas = -profil.tiltRiskOnOff;
+  else tiltEmas = 0;
+  const tiltKripto = -tiltEmas;
+
+  let solShareBase = profil.solDefaultShare;
+  if(regimeUsed==='Stagflation') solShareBase = 0.1;
+  else if(regimeUsed==='Risk-off') solShareBase = 0.15;
+  const solShare = Math.min(profil.solCap, solShareBase);
+
+  const emasPct = clamp(profil.splitEmas + tiltEmas, profil.floorEmas, 1 - profil.floorKripto);
+  const btcPct = (1-emasPct)*(1-solShare);
+  const solPct = (1-emasPct)*solShare;
+
+  const nomEmas = profil.dcaAmount*emasPct;
+  const nomBtc = profil.dcaAmount*btcPct;
+  const nomSol = profil.dcaAmount*solPct;
+
+  return {
+    profil, splitKripto, harga, spotIdrPerGram, etfEquivalent, btcRp, solRp,
+    growthScore, fcScore, inflasiScore, regimeRaw, regimeUsed, stillLocked, lockDaysLeft, needLockUpdate,
+    tiltEmas, tiltKripto, solShare, emasPct, btcPct, solPct, nomEmas, nomBtc, nomSol,
+  };
+}
+
+function render(){
+  const r = computeAll();
+
+  $('mRegimeUsed').textContent = r.regimeUsed;
+  $('mRegimeUsed2').textContent = r.regimeUsed;
+  $('mRegimeRaw').textContent = r.regimeRaw;
+  $('mLockStatus').textContent = r.stillLocked ? `Terkunci (${r.lockDaysLeft}h lagi)` : 'Boleh pindah';
+  $('mDcaAmount').textContent = fmtIDR(r.profil.dcaAmount);
+
+  $('mGrowth').textContent = fmtScore(r.growthScore);
+  $('mFc').textContent = fmtScore(r.fcScore);
+  $('mInflasi').textContent = fmtScore(r.inflasiScore);
+
+  let lockNote = '';
+  if(r.stillLocked){
+    lockNote = `Rezim mentah sudah "<b>${r.regimeRaw}</b>" tapi kunci 60 hari masih aktif (${r.lockDaysLeft} hari lagi) — dipakai tetap "<b>${r.regimeUsed}</b>" sesuai aturan anti-flip-flop.`;
+  } else if(r.needLockUpdate){
+    lockNote = `Kunci sudah lepas dan rezim berubah jadi "<b>${r.regimeRaw}</b>" — salin ini ke field "Rezim terkunci saat ini" dan set tanggal hari ini untuk mengunci ulang.`;
+  } else {
+    lockNote = `Kunci sudah lepas, rezim mentah dan rezim terkunci sama-sama "<b>${r.regimeUsed}</b>".`;
+  }
+  $('mLockNote').innerHTML = lockNote;
+
+  const segTotal = 100;
+  $('segbar').innerHTML = `
+    <div class="seg-emas" style="width:${r.emasPct*100}%">${r.emasPct>0.12?fmtPct(r.emasPct):''}</div>
+    <div class="seg-btc" style="width:${r.btcPct*100}%">${r.btcPct>0.12?fmtPct(r.btcPct):''}</div>
+    <div class="seg-sol" style="width:${r.solPct*100}%">${r.solPct>0.12?fmtPct(r.solPct):''}</div>
+  `;
+
+  $('cEmasPct').textContent = fmtPct(r.emasPct);
+  $('cEmasRp').textContent = fmtIDR(r.nomEmas);
+  $('cEmasUnit').textContent = r.etfEquivalent>0 ? (r.nomEmas/r.etfEquivalent).toFixed(3)+' gram (ETF, est.)' : '—';
+
+  $('cBtcPct').textContent = fmtPct(r.btcPct);
+  $('cBtcRp').textContent = fmtIDR(r.nomBtc);
+  $('cBtcUnit').textContent = r.btcRp>0 ? (r.nomBtc/r.btcRp).toFixed(6)+' BTC (est.)' : '—';
+
+  $('cSolPct').textContent = fmtPct(r.solPct);
+  $('cSolRp').textContent = fmtIDR(r.nomSol);
+  $('cSolUnit').textContent = r.solRp>0 ? (r.nomSol/r.solRp).toFixed(4)+' SOL (est.)' : '—';
+
+  const solOfKripto = (r.btcPct+r.solPct)>0 ? r.solPct/(r.btcPct+r.solPct) : 0;
+  $('solCapCheck').innerHTML = solOfKripto > r.profil.solCap + 0.0001
+    ? `<span style="color:var(--status-red)">MELANGGAR KAP SOL</span> — SOL ${fmtPct(solOfKripto)} dari porsi kripto, kap ${fmtPct(r.profil.solCap)}.`
+    : `<span style="color:var(--status-green)">OK</span> — SOL ${fmtPct(solOfKripto)} dari porsi kripto (kap ${fmtPct(r.profil.solCap)}).`;
+
+  // Profil consistency check
+  const checkA = Math.abs(r.profil.splitEmas + r.splitKripto - 1) < 0.001;
+  $('profileStatus').innerHTML = checkA
+    ? `<span style="color:var(--status-green)">OK</span> — Emas ${fmtPct(r.profil.splitEmas)} + Kripto ${fmtPct(r.splitKripto)} = 100%.`
+    : `<span style="color:var(--status-red)">PERIKSA ANGKA</span>`;
+
+  // ---- Stok saya ----
+  const stokFisik = parseFloat($('inStokFisik').value)||0;
+  const stokEtf = parseFloat($('inStokEtf').value)||0;
+  const stokBtc = parseFloat($('inStokBtc').value)||0;
+  const stokSol = parseFloat($('inStokSol').value)||0;
+
+  const valFisik = stokFisik * r.harga.antamBeli;
+  const valEtf = stokEtf * r.etfEquivalent;
+  const valBtc = stokBtc * r.btcRp;
+  const valSol = stokSol * r.solRp;
+  const valEmasTotal = valFisik + valEtf;
+  const valKriptoTotal = valBtc + valSol;
+  const valTotal = valEmasTotal + valKriptoTotal;
+
+  if(valTotal <= 0){
+    $('stokSummary').innerHTML = 'Stok masih nol — isi setelah transaksi pertama.';
+    $('stokSignal').innerHTML = '';
+  } else {
+    const wEmas = valEmasTotal/valTotal;
+    const wKripto = valKriptoTotal/valTotal;
+    $('stokSummary').innerHTML = `Nilai emas: <b class="mono">${fmtIDR(valEmasTotal)}</b> (${fmtPct(wEmas)}) &nbsp;·&nbsp; Nilai kripto: <b class="mono">${fmtIDR(valKriptoTotal)}</b> (${fmtPct(wKripto)}) &nbsp;·&nbsp; Total: <b class="mono">${fmtIDR(valTotal)}</b>`;
+
+    let sig;
+    if(wEmas > r.profil.splitEmas + 0.15) sig = 'Bobot emas sudah jauh di atas strategis — DCA berikutnya bisa lebih condong ke kripto. Ini bukan sinyal jual emas.';
+    else if(wEmas < r.profil.splitEmas - 0.15) sig = 'Bobot emas sudah jauh di bawah strategis — DCA berikutnya bisa lebih condong ke emas. Ini bukan sinyal jual kripto.';
+    else sig = 'Bobot masih dalam jalur split strategis — jangan jual apa pun hanya untuk "merapikan" komposisi.';
+    $('stokSignal').innerHTML = sig;
+  }
+
+  const ambangRp = r.profil.thresholdGram * r.harga.antamBeli;
+  if(stokEtf<=0){
+    $('etfSignal').innerHTML = 'Belum ada stok ETF emas.';
+  } else if(valEtf >= ambangRp){
+    $('etfSignal').innerHTML = `<span style="color:var(--status-green)">SIAP KONVERSI ke fisik</span> — nilai ETF ${fmtIDR(valEtf)} ≥ ambang ${fmtIDR(ambangRp)} (${r.profil.thresholdGram} gram).`;
+  } else {
+    $('etfSignal').innerHTML = `Kumpulkan ETF dulu — nilai ETF ${fmtIDR(valEtf)}, ambang ${fmtIDR(ambangRp)}.`;
+  }
+
+  return r;
+}
+
+['inDcaAmount','inSplitEmas','inThresholdGram','inFloorEmas','inFloorKripto','inSolCap',
+ 'inTiltRiskOnOff','inTiltStagflasi','inThreshold','inLockDays','inLockedRegime','inLockedDate',
+ 'inUsdIdr','inXauUsd','inAntamBeli','inBtcUsd','inSolUsd','inEtfOverride',
+ 'macroIn_yield_curve','macroIn_real_yield','macroIn_dxy_proxy','macroPrev_dxy_proxy',
+ 'macroIn_cpi_yoy','macroPrev_cpi_yoy','macroIn_wti_yoy',
+ 'inStokFisik','inStokEtf','inStokBtc','inStokSol'
+].forEach(id=>{
+  document.addEventListener('input', (e)=>{ if(e.target.id===id) render(); });
 });
-const scores = { growth: 0, inflation: 0, quadrant: "Netral/Transisi" };
-const currentAllocation = { saham: 20, kripto: 20, gold: 20, fixedIncome: 20, cash: 20 };
 
-function getQuadrant(g, i) {
-  if (Math.abs(g) <= 0.15 || Math.abs(i) <= 0.15) return "Netral/Transisi";
-  if (g > 0.15 && i < -0.15) return "K1: Goldilocks";
-  if (g > 0.15 && i > 0.15) return "K2: Reflation";
-  if (g < -0.15 && i > 0.15) return "K3: Stagflation";
-  if (g < -0.15 && i < -0.15) return "K4: Deflasi/Resesi";
-  return "Netral/Transisi";
-}
-
-function showError(msg) {
-  const el = document.getElementById("errorBanner");
-  el.textContent = msg;
-  el.classList.add("show");
-}
-function clearError() {
-  document.getElementById("errorBanner").classList.remove("show");
-}
-
-async function fetchIndicator(ind) {
-  if (ind.manual) return;
-  try {
-    const res = await fetch(ind.endpoint);
-    const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || "Gagal mengambil data");
-    state[ind.key].current = data.latest ? data.latest.value : null;
-    state[ind.key].previous = data.previous ? data.previous.value : null;
-    state[ind.key].date = data.latest ? data.latest.date : null;
-    state[ind.key].status = "ok";
-  } catch (err) {
-    state[ind.key].status = "error";
-    state[ind.key].errorMsg = err.message;
+async function loadQuotes(force){
+  $('lastUpdated').textContent = 'memuat…';
+  const {data, stale, fromCache} = await fetchQuotes(force);
+  quotesCache = data;
+  if(!data){
+    $('lastUpdated').className = 'badge mono badge-red';
+    $('lastUpdated').textContent = 'gagal ambil data';
+    render();
+    return;
   }
+  const staleList = applyQuotesToInputs(data);
+  const ts = new Date(data.fetched_at || Date.now());
+  $('lastUpdated').className = 'badge mono ' + (stale ? 'badge-amber' : 'badge-green');
+  $('lastUpdated').textContent = (stale ? 'stale · ' : (fromCache ? 'cache · ' : 'live · ')) + ts.toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
+  $('priceFreshness').textContent = staleList.length ? `⚠ tidak ter-fetch: ${staleList.join(', ')} — isi manual` : 'semua sumber berhasil';
+  render();
 }
 
-function recompute() {
-  let growth = 0, inflation = 0;
-  INDICATORS.forEach(ind => {
-    const s = state[ind.key];
-    if (s.current === null || s.current === undefined || s.current === "") {
-      s.score = null; s.contribution = null; return;
-    }
-    const curr = parseFloat(s.current);
-    const prev = s.previous === null || s.previous === undefined || s.previous === "" ? curr : parseFloat(s.previous);
-    s.score = ind.scoreFn(curr, prev);
-    s.contribution = s.score * ind.weight;
-    if (ind.axis === "growth") growth += s.contribution; else inflation += s.contribution;
-  });
-  scores.growth = growth;
-  scores.inflation = inflation;
-  scores.quadrant = getQuadrant(growth, inflation);
+$('btnRefresh').addEventListener('click', ()=> loadQuotes(true));
+
+// ---- Gemini explain, on-demand + client-side cache by input hash ----
+function simpleHash(str){
+  let h = 0;
+  for(let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) | 0; }
+  return h.toString(36);
 }
 
-function scoreBadgeClass(score) {
-  if (score === null || score === undefined) return "gray";
-  if (score > 0) return "green";
-  if (score < 0) return "red";
-  return "gray";
-}
+$('btnExplain').addEventListener('click', async ()=>{
+  const r = render();
+  const staleList = quotesCache ? applyQuotesToInputs(quotesCache).length ? [] : [] : [];
+  const payload = {
+    regimeRaw: r.regimeRaw,
+    regimeUsed: r.regimeUsed,
+    lockActive: r.stillLocked,
+    lockDaysLeft: r.lockDaysLeft,
+    growthScore: +r.growthScore.toFixed(3),
+    fcScore: +r.fcScore.toFixed(3),
+    inflationScore: +r.inflasiScore.toFixed(3),
+    tiltEmas: r.tiltEmas,
+    tiltKripto: r.tiltKripto,
+    splitStrategis: {emas: r.profil.splitEmas, kripto: r.splitKripto},
+    pecahan: {emas: +r.emasPct.toFixed(4), btc: +r.btcPct.toFixed(4), sol: +r.solPct.toFixed(4)},
+    dcaAmountIdr: r.profil.dcaAmount,
+    nominal: {emas: Math.round(r.nomEmas), btc: Math.round(r.nomBtc), sol: Math.round(r.nomSol)},
+    stok: null,
+    dataStale: [],
+  };
+  const payloadStr = JSON.stringify(payload);
+  const hash = simpleHash(payloadStr);
+  const cacheKey = 'barbell:narrative:'+hash;
 
-function renderIndicators() {
-  const list = document.getElementById("indicatorList");
-  list.innerHTML = "";
-  INDICATORS.forEach(ind => {
-    const s = state[ind.key];
-    const row = document.createElement("div");
-    row.className = "ind-row";
-    row.setAttribute("data-row-key", ind.key);
+  const cached = cacheGet(cacheKey, 24*3600*1000);
+  if(cached){
+    $('narrativeBox').innerHTML = marked.parse(cached);
+    $('explainStatus').textContent = 'dari cache (input sama seperti sebelumnya)';
+    return;
+  }
 
-    const nameCell = document.createElement("div");
-    nameCell.setAttribute("data-label", "Indikator");
-    nameCell.innerHTML = `<div class="ind-name"><span>${ind.label}</span><span class="tag">${ind.timing} &middot; bobot ${(ind.weight*100).toFixed(0)}%</span></div>`;
-    row.appendChild(nameCell);
-
-    const curCell = document.createElement("div");
-    curCell.className = "ind-val";
-    curCell.setAttribute("data-label", "Bulan ini");
-    if (ind.manual) {
-      curCell.innerHTML = `<input type="number" step="0.01" data-key="${ind.key}" data-field="current" value="${s.current ?? ""}" placeholder="cth 54.6" />`;
-    } else if (s.status === "error") {
-      curCell.innerHTML = `<span style="color:var(--red);font-size:12px;">gagal</span>`;
-    } else {
-      curCell.textContent = s.current !== null ? Number(s.current).toFixed(2) : "-";
-    }
-    row.appendChild(curCell);
-
-    const prevCell = document.createElement("div");
-    prevCell.className = "ind-val";
-    prevCell.setAttribute("data-label", "Bulan lalu");
-    if (ind.manual) {
-      prevCell.innerHTML = `<input type="number" step="0.01" data-key="${ind.key}" data-field="previous" value="${s.previous ?? ""}" placeholder="cth 55.6" />`;
-    } else {
-      prevCell.textContent = s.previous !== null ? Number(s.previous).toFixed(2) : "-";
-    }
-    row.appendChild(prevCell);
-
-    const scoreCell = document.createElement("div");
-    scoreCell.setAttribute("data-label", "Skor");
-    const scoreText = s.score === null || s.score === undefined ? "-" : (s.score > 0 ? "+1" : s.score < 0 ? "-1" : "0");
-    scoreCell.innerHTML = `<span class="score-pill badge ${scoreBadgeClass(s.score)}">${scoreText}</span>`;
-    row.appendChild(scoreCell);
-
-    const contribCell = document.createElement("div");
-    contribCell.className = "ind-val";
-    contribCell.setAttribute("data-label", "Kontribusi");
-    contribCell.textContent = s.contribution !== null && s.contribution !== undefined ? s.contribution.toFixed(2) : "-";
-    row.appendChild(contribCell);
-
-    list.appendChild(row);
-  });
-
-  list.querySelectorAll("input[data-key]").forEach(input => {
-    input.addEventListener("input", (e) => {
-      const key = e.target.getAttribute("data-key");
-      const field = e.target.getAttribute("data-field");
-      state[key][field] = e.target.value === "" ? null : parseFloat(e.target.value);
-      recompute();
-      updateIndicatorRowVisual(key);
-      renderScores();
-      renderAllocation();
-    });
-  });
-}
-
-function updateIndicatorRowVisual(key) {
-  const s = state[key];
-  const row = document.querySelector(`.ind-row[data-row-key="${key}"]`);
-  if (!row) return;
-  const scoreCell = row.children[3];
-  const contribCell = row.children[4];
-  const scoreText = s.score === null || s.score === undefined ? "-" : (s.score > 0 ? "+1" : s.score < 0 ? "-1" : "0");
-  scoreCell.innerHTML = `<span class="score-pill badge ${scoreBadgeClass(s.score)}">${scoreText}</span>`;
-  contribCell.textContent = s.contribution !== null && s.contribution !== undefined ? s.contribution.toFixed(2) : "-";
-}
-
-function renderScores() {
-  document.getElementById("growthScoreVal").textContent = (scores.growth >= 0 ? "+" : "") + scores.growth.toFixed(2);
-  document.getElementById("inflationScoreVal").textContent = (scores.inflation >= 0 ? "+" : "") + scores.inflation.toFixed(2);
-  document.getElementById("quadrantVal").textContent = scores.quadrant;
-  const regime = REGIME_MATRIX[scores.quadrant];
-  const badge = document.getElementById("verdictBadge");
-  badge.textContent = regime.verdict;
-  badge.className = "badge " + regime.color;
-}
-
-function renderAllocation() {
-  const regime = REGIME_MATRIX[scores.quadrant];
-  const list = document.getElementById("allocationList");
-  list.innerHTML = "";
-  let totalCurrent = 0;
-  Object.keys(ASSET_LABELS).forEach(assetKey => {
-    const target = regime[assetKey] * 100;
-    const current = currentAllocation[assetKey];
-    totalCurrent += current;
-    const gap = target - current;
-    const row = document.createElement("div");
-    row.className = "alloc-row";
-
-    const nameCell = document.createElement("div");
-    nameCell.setAttribute("data-label", "Aset");
-    nameCell.textContent = ASSET_LABELS[assetKey];
-    row.appendChild(nameCell);
-
-    const targetCell = document.createElement("div");
-    targetCell.setAttribute("data-label", "Target");
-    targetCell.style.fontFamily = "var(--font-mono)";
-    targetCell.textContent = target.toFixed(0) + "%";
-    row.appendChild(targetCell);
-
-    const currentCell = document.createElement("div");
-    currentCell.setAttribute("data-label", "Saat ini");
-    currentCell.innerHTML = `<input type="number" step="1" data-asset="${assetKey}" value="${current}" />`;
-    row.appendChild(currentCell);
-
-    const gapCell = document.createElement("div");
-    gapCell.setAttribute("data-label", "Gap");
-    const gapClass = gap > 0.5 ? "gap-pos" : gap < -0.5 ? "gap-neg" : "gap-zero";
-    gapCell.className = gapClass;
-    gapCell.style.fontFamily = "var(--font-mono)";
-    gapCell.textContent = (gap >= 0 ? "+" : "") + gap.toFixed(0) + "%";
-    row.appendChild(gapCell);
-
-    const actionCell = document.createElement("div");
-    actionCell.setAttribute("data-label", "Aksi");
-    const action = gap > 5 ? "Tambah" : gap < -5 ? "Kurangi" : "Tahan";
-    actionCell.textContent = action;
-    row.appendChild(actionCell);
-
-    list.appendChild(row);
-  });
-
-  const totalLine = document.getElementById("allocTotalLine");
-  totalLine.textContent = `Total alokasi saat ini: ${totalCurrent.toFixed(0)}%`;
-  totalLine.className = "total-line" + (Math.abs(totalCurrent - 100) > 1 ? " bad" : "");
-
-  list.querySelectorAll("input[data-asset]").forEach(input => {
-    input.addEventListener("input", (e) => {
-      currentAllocation[e.target.getAttribute("data-asset")] = parseFloat(e.target.value) || 0;
-      renderAllocation();
-    });
-  });
-}
-
-async function refreshAll() {
-  clearError();
-  const btn = document.getElementById("refreshBtn");
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span> Mengambil...`;
-  const results = await Promise.allSettled(INDICATORS.filter(i => !i.manual).map(fetchIndicator));
-  const anyError = INDICATORS.some(ind => !ind.manual && state[ind.key].status === "error");
-  if (anyError) showError("Sebagian data gagal diambil dari FRED. Cek koneksi atau coba lagi. Data lain tetap dipakai.");
-  recompute();
-  renderIndicators();
-  renderScores();
-  renderAllocation();
-  document.getElementById("lastUpdated").textContent = new Date().toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
-  btn.disabled = false;
-  btn.innerHTML = `<i data-lucide="refresh-cw"></i> Ambil data terbaru`;
-  lucide.createIcons();
-}
-
-async function generateNarrative() {
-  const btn = document.getElementById("generateBtn");
-  const box = document.getElementById("narrativeBox");
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span> Menyusun analisis...`;
-  box.style.display = "block";
-  box.textContent = "Menunggu respons dari Gemini...";
-
-  const regime = REGIME_MATRIX[scores.quadrant];
-  const indicatorsPayload = INDICATORS.map(ind => {
-    const s = state[ind.key];
-    const dir = s.score > 0 ? "+" : s.score < 0 ? "-" : "0";
-    return { label: ind.label, scoreLabel: dir };
-  });
-  const allocationPayload = Object.keys(ASSET_LABELS).map(assetKey => {
-    const target = Math.round(regime[assetKey] * 100);
-    const current = currentAllocation[assetKey];
-    return { name: ASSET_LABELS[assetKey], target, current, gap: target - current };
-  });
-
-  try {
-    const res = await fetch("/gemini/narrative", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        growthScore: scores.growth,
-        inflationScore: scores.inflation,
-        quadrant: scores.quadrant,
-        indicators: indicatorsPayload,
-        allocation: allocationPayload,
-      }),
+  $('btnExplain').disabled = true;
+  $('explainStatus').textContent = 'memanggil Gemini…';
+  try{
+    const res = await fetch('/gemini/explain', {
+      method:'POST', headers:{'content-type':'application/json'}, body: payloadStr,
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error((data.error || "Gagal generate narasi") + (data.detail ? " | " + data.detail : ""));
-    box.innerHTML = marked.parse(data.narrative);
-  } catch (err) {
-    box.textContent = "Gagal membuat analisis: " + err.message;
+    if(data.narrative){
+      cacheSet(cacheKey, data.narrative);
+      $('narrativeBox').innerHTML = marked.parse(data.narrative);
+      $('explainStatus').textContent = '';
+    } else {
+      $('explainStatus').textContent = 'Gagal: ' + (data.error||'tidak diketahui');
+    }
+  }catch(e){
+    $('explainStatus').textContent = 'Gagal memanggil server: ' + e.message;
+  }finally{
+    $('btnExplain').disabled = false;
   }
-  btn.disabled = false;
-  btn.innerHTML = `<i data-lucide="sparkles"></i> Generate analisis`;
-  lucide.createIcons();
-}
+});
 
-document.getElementById("refreshBtn").addEventListener("click", refreshAll);
-document.getElementById("generateBtn").addEventListener("click", generateNarrative);
+$('btnCopyJournal').addEventListener('click', ()=>{
+  const r = render();
+  const text = `${todayISO()} | Rezim: ${r.regimeUsed} (mentah: ${r.regimeRaw}) | DCA: ${fmtIDR(r.profil.dcaAmount)} | Emas ${fmtPct(r.emasPct)} (${fmtIDR(r.nomEmas)}) | BTC ${fmtPct(r.btcPct)} (${fmtIDR(r.nomBtc)}) | SOL ${fmtPct(r.solPct)} (${fmtIDR(r.nomSol)}) | Override: Tidak | Catatan: `;
+  navigator.clipboard.writeText(text).then(()=>{
+    $('copyStatus').textContent = 'tersalin — tempel ke 06_Jurnal';
+    setTimeout(()=> $('copyStatus').textContent='', 3000);
+  }).catch(()=>{ $('copyStatus').textContent = 'gagal menyalin'; });
+});
 
-recompute();
-renderIndicators();
-renderScores();
-renderAllocation();
-lucide.createIcons();
-refreshAll();
+// init
+loadQuotes(false);
 </script>
 </body>
 </html>

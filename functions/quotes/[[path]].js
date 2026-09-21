@@ -15,12 +15,12 @@ const FRED_PRESETS = {
   dxy_proxy: { series_id: "DTWEXBGS", units: "lin", frequency: "m", aggregation_method: "eop", limit: 3 },
   cpi_yoy: { series_id: "CPIAUCSL", units: "pc1", frequency: "m", limit: 3 },
   wti_yoy: { series_id: "DCOILWTICO", units: "pc1", frequency: "m", aggregation_method: "eop", limit: 3 },
-  // gold_usd sengaja TIDAK ADA di sini lagi. FRED sudah mempensiunkan
+  // gold_usd sengaja TIDAK ADA di sini. FRED sudah mempensiunkan
   // GOLDAMGBD228NLBM (seri harga emas harian LBMA) — bukan salah kode,
-  // sumbernya sendiri sudah mati (HTTP 400 dari FRED). FRED juga tidak
-  // punya pengganti yang memberi level harga $/oz (cuma index, GOLDPMGBD/
-  // NASDAQQGLDI), jadi ikut aturan skill: kalau tidak ada API gratis yang
-  // benar, jangan dipaksa/diproksi — biarkan manual (field XAU/USD di UI).
+  // sumbernya sendiri sudah mati (HTTP 400 dari FRED), dan tidak ada
+  // pengganti FRED yang memberi level harga $/oz (cuma index).
+  // XAU/USD sekarang diambil dari CoinGecko lewat fetchCrypto() di bawah
+  // (proxy PAXG/XAUT — token emas fisik), bukan dari FRED.
 };
 
 function jsonResponse(body, status = 200) {
@@ -58,23 +58,42 @@ async function fetchFredSeries(key, apiKey) {
   };
 }
 
-async function fetchCrypto() {
+async function fetchCrypto(cgApiKey) {
+  // pax-gold (PAXG) & tether-gold (XAUT): masing-masing token = 1 troy oz
+  // emas fisik tersimpan di brankas, ditukar-rupiahkan lewat exchange —
+  // proxy XAU/USD paling realistis yang ada di CoinGecko tanpa API gold
+  // terpisah. PAXG dipakai utama (lebih likuid), XAUT fallback.
   const url =
-    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,solana&vs_currencies=usd&include_last_updated_at=true";
-  // CoinGecko kadang menolak (403) permintaan tanpa User-Agent/Accept yang
-  // jelas — beberapa edge Cloudflare kena filter bot generik mereka.
-  // Header di bawah ini yang membedakan "curl kosong" dari browser biasa.
-  const res = await fetch(url, {
-    headers: {
-      accept: "application/json",
-      "user-agent": "Mozilla/5.0 (compatible; BarbellDCA/1.0; +https://pages.dev)",
-    },
-  });
+    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,solana,pax-gold,tether-gold&vs_currencies=usd&include_last_updated_at=true";
+  const headers = {
+    accept: "application/json",
+    "user-agent": "Mozilla/5.0 (compatible; BarbellDCA/1.0; +https://pages.dev)",
+  };
+  // Demo API key CoinGecko (gratis, daftar di coingecko.com/en/developers/dashboard)
+  // memindahkan kuota dari pool anonim bersama ke kuota milik akun sendiri —
+  // jauh lebih tahan dari 403/rate-limit. Opsional: kalau secret belum diset,
+  // tetap jalan lewat endpoint publik seperti sebelumnya.
+  if (cgApiKey) headers["x-cg-demo-api-key"] = cgApiKey;
+
+  const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`CoinGecko HTTP ${res.status}`);
   const data = await res.json();
+
+  let goldUsd = null;
+  let goldSource = null;
+  if (data["pax-gold"]?.usd) {
+    goldUsd = data["pax-gold"].usd;
+    goldSource = "PAXG";
+  } else if (data["tether-gold"]?.usd) {
+    goldUsd = data["tether-gold"].usd;
+    goldSource = "XAUT";
+  }
+
   return {
     btc_usd: data.bitcoin?.usd ?? null,
     sol_usd: data.solana?.usd ?? null,
+    gold_usd: goldUsd,
+    gold_source: goldSource,
     fetched_unix: data.bitcoin?.last_updated_at ?? null,
   };
 }
@@ -114,7 +133,7 @@ export async function onRequest(context) {
   // (graceful degradation) — satu sumber mati tidak boleh menjatuhkan semua.
   // Gold sengaja tidak ada di sini — lihat catatan di FRED_PRESETS, isi manual di UI.
   const [crypto, usdidr, ...macroResults] = await Promise.allSettled([
-    fetchCrypto(),
+    fetchCrypto(env.COINGECKO_API_KEY),
     fetchUsdIdr(),
     fetchFredSeries("yield_curve", env.FRED_API_KEY),
     fetchFredSeries("real_yield", env.FRED_API_KEY),

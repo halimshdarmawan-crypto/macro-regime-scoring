@@ -220,8 +220,9 @@
         <input type="number" id="inUsdIdr" step="1">
       </div>
       <div class="field">
-        <label>XAU/USD (spot, per oz)</label>
+        <label id="lblXauUsd">XAU/USD (spot, per oz)</label>
         <input type="number" id="inXauUsd" step="1">
+        <div class="note">Otomatis via PAXG/XAUT (CoinGecko) — token emas fisik, biasanya &lt;1% beda dari spot LBMA.</div>
       </div>
       <div class="field">
         <label>Harga beli Antam/fisik (Rp/gram)</label>
@@ -327,7 +328,7 @@
 
   <footer>
     Alat bias DCA pribadi — bukan nasihat keuangan. Skor tanh &amp; kuadran overlay adalah penyederhanaan.<br>
-    Sumber: FRED (T10Y2Y, DFII10, DTWEXBGS sbg proxy USD index — bukan ICE DXY, CPIAUCSL, DCOILWTICO, GOLDAMGBD228NLBM), CoinGecko (BTC/SOL), Frankfurter (USD/IDR), Antam/Logam Mulia (manual).
+    Sumber: FRED (T10Y2Y, DFII10, DTWEXBGS sbg proxy USD index — bukan ICE DXY, CPIAUCSL, DCOILWTICO), CoinGecko (BTC, SOL, dan XAU/USD via token PAXG/XAUT sbg proxy — bukan spot LBMA asli), Frankfurter (USD/IDR), Antam/Logam Mulia (manual, cek logammulia.com).
   </footer>
 </div>
 
@@ -384,13 +385,18 @@ function applyQuotesToInputs(q){
   if(q.usdidr && q.usdidr.usdidr) $('inUsdIdr').value = q.usdidr.usdidr;
   else staleList.push('USD/IDR');
 
-  if(q.gold && q.gold.latest) $('inXauUsd').value = q.gold.latest.value;
-  else staleList.push('Gold XAU/USD');
-
   if(q.crypto && q.crypto.btc_usd) $('inBtcUsd').value = q.crypto.btc_usd;
   else staleList.push('BTC');
   if(q.crypto && q.crypto.sol_usd) $('inSolUsd').value = q.crypto.sol_usd;
   else staleList.push('SOL');
+
+  if(q.crypto && q.crypto.gold_usd){
+    $('inXauUsd').value = q.crypto.gold_usd;
+    $('lblXauUsd').textContent = `XAU/USD (via ${q.crypto.gold_source}, proxy — per oz)`;
+  } else {
+    staleList.push('Gold XAU/USD (PAXG/XAUT)');
+    $('lblXauUsd').textContent = 'XAU/USD (spot, per oz)';
+  }
 
   const macroRows = [
     {key:'yield_curve', label:'Yield Curve 10Y-2Y (pp)', axis:'Growth', rule:'TANH(nilai/0.15)'},

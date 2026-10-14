@@ -373,7 +373,17 @@ async function fetchQuotes(force){
     if(cached) return {data: cached, stale:false, fromCache:true};
   }
   try{
-    const res = await fetch('/quotes/all');
+    // Cache-busting query param + no-store: beberapa CDN edge (termasuk
+    // Cloudflare) kadang tetap menyimpan respons lama walau function ini
+    // sudah kirim header "cache-control: no-store" — URL yang selalu unik
+    // memastikan tidak ada cache key yang bisa match sama sekali.
+    const res = await fetch('/quotes/all?t=' + Date.now(), { cache: 'no-store' });
+    if(!res.ok){
+      // Jangan anggap ini "live" — body-nya bisa saja JSON error (mis. 404/500)
+      // yang tanpa pengecekan ini akan lolos sebagai sukses dan bikin badge
+      // "live" padahal datanya kosong.
+      throw new Error('quotes HTTP ' + res.status);
+    }
     const data = await res.json();
     cacheSet(CACHE_KEY, data);
     return {data, stale:false, fromCache:false};

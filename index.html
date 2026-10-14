@@ -690,7 +690,13 @@ async function loadQuotes(force){
   const ts = new Date(data.fetched_at || Date.now());
   $('lastUpdated').className = 'badge mono ' + (stale ? 'badge-amber' : 'badge-green');
   $('lastUpdated').textContent = (stale ? 'stale · ' : (fromCache ? 'cache · ' : 'live · ')) + ts.toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
-  $('priceFreshness').textContent = staleList.length ? `⚠ tidak ter-fetch: ${staleList.join(', ')} — isi manual` : 'semua sumber berhasil';
+  let freshMsg = staleList.length ? `⚠ tidak ter-fetch: ${staleList.join(', ')} — isi manual` : 'semua sumber berhasil';
+  if(Array.isArray(data.errors) && data.errors.length){
+    // Tampilkan alasan asli dari server (mis. "FRED yield_curve HTTP 520")
+    // supaya jelas ini masalah sumber data eksternal, bukan bug di tools ini.
+    freshMsg += ` (sebab: ${data.errors.join(' · ')})`;
+  }
+  $('priceFreshness').textContent = freshMsg;
   render();
 }
 

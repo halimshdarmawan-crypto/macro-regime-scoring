@@ -34,7 +34,11 @@ function jsonResponse(body, status = 200) {
   });
 }
 
-async function fetchFredSeries(key, apiKey) {
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchFredSeriesOnce(key, apiKey) {
   const preset = FRED_PRESETS[key];
   const url = new URL(FRED_BASE);
   url.searchParams.set("series_id", preset.series_id);
@@ -56,6 +60,22 @@ async function fetchFredSeries(key, apiKey) {
     previous: valid[1] ? { date: valid[1].date, value: parseFloat(valid[1].value) } : null,
     series_id: preset.series_id,
   };
+}
+
+// FRED (api.stlouisfed.org) kadang balas 5xx/520 sesaat (masalah di sisi
+// mereka, bukan kode kita) — retry singkat di sini jauh lebih murah
+// daripada bikin user bolak-balik pencet Refresh manual di browser.
+async function fetchFredSeries(key, apiKey, attempts = 3) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fetchFredSeriesOnce(key, apiKey);
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) await sleep(300 * (i + 1)); // 300ms, lalu 600ms
+    }
+  }
+  throw lastErr;
 }
 
 async function fetchCrypto(cgApiKey) {
